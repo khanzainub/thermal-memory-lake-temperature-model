@@ -15,41 +15,27 @@ The web tool uses:
 
 The core atmospheric forcing is
 
-$$
-T_E(t)=\beta_0+\beta_T T_a(t)+\beta_S S_{\downarrow}(t)+\beta_U U(t)
-$$
+```math
+T_E(t) = \beta_0 + \beta_T T_a(t) + \beta_S S_{\downarrow}(t) + \beta_U U(t)
+```
 
 and the recursive thermal-memory model is
 
-$$
-T_L(t)
-=
-e^{-\Delta t/\tau}T_L(t-\Delta t)
-+
-\left(1-e^{-\Delta t/\tau}\right)T_E(t).
-$$
+```math
+T_L(t) = e^{-\Delta t/\tau} T_L(t-\Delta t) + \left(1-e^{-\Delta t/\tau}\right) T_E(t)
+```
 
 Therefore,
 
-$$
-T_L(t)
-=
-e^{-\Delta t/\tau}T_L(t-\Delta t)
-+
-\left(1-e^{-\Delta t/\tau}\right)
-\left[
-\beta_0
-+\beta_T T_a(t)
-+\beta_S S_{\downarrow}(t)
-+\beta_U U(t)
-\right].
-$$
+```math
+T_L(t) = e^{-\Delta t/\tau} T_L(t-\Delta t) + \left(1-e^{-\Delta t/\tau}\right)\left[\beta_0+\beta_T T_a(t)+\beta_S S_{\downarrow}(t)+\beta_U U(t)\right]
+```
 
-Here $\tau$ is the characteristic thermal response time and
+Here **τ** is the characteristic thermal response time and
 
-$$
-M=e^{-\Delta t/\tau}
-$$
+```math
+M = e^{-\Delta t/\tau}
+```
 
 is the thermal-memory coefficient.
 
@@ -98,16 +84,9 @@ Whenever fine-resolution atmospheric data are available, it is scientifically pr
 
 The basic model estimates five parameters jointly:
 
-$$
-\Theta=
-\left\{
-\beta_0,
-\beta_T,
-\beta_S,
-\beta_U,
-\tau
-\right\}.
-$$
+```math
+\Theta = \{\beta_0,\beta_T,\beta_S,\beta_U,\tau\}
+```
 
 The implementation minimizes errors between simulated and observed LST at dates where observed LST exists.
 
@@ -157,7 +136,7 @@ Before using it for publication-quality reconstruction or future climate project
 - parameter identifiability;
 - sensitivity to the number and timing of sparse LST observations;
 - out-of-sample validation;
-- uncertainty in $\tau$ and the $\beta$ coefficients;
+- uncertainty in **τ** and the **β coefficients**;
 - comparison against simpler baselines;
 - performance across different lake types and climatic settings.
 
