@@ -8,57 +8,22 @@ This repository contains a Python/Streamlit implementation of a reduced-order th
 
 The web tool uses:
 
-- air temperature \(T_a\), °C
-- incoming shortwave solar radiation \(S_{\downarrow}\), W m\(^{-2}\)
-- wind speed \(U\), m s\(^{-1}\)
+- air temperature (`Tₐ`), °C
+- incoming shortwave solar radiation (`S↓`), W m⁻²
+- wind speed (`U`), m s⁻¹
 - sparse observed Lake Surface Temperature, °C
 
 The core atmospheric forcing is
 
 $$
-T_E(t)=\beta_0+\beta_TT_a(t)+\beta_SS_{\downarrow}(t)+\beta_UU(t)
+T_E(t)=\beta_0+\beta_T T_a(t)+\beta_S S_{\downarrow}(t)+\beta_U U(t)
 $$
 
 and the recursive thermal-memory model is
 
 $$
-T_L(t)=e^{-\Delta t/\tau}T_L(t-\Delta t)
-+\left(1-e^{-\Delta t/\tau}\right)T_E(t).
-$$
-
-Therefore,
-
-$$
-T_L(t)=e^{-\Delta t/\tau}T_L(t-\Delta t)
-+\left(1-e^{-\Delta t/\tau}\right)
-\left[
-\beta_0+\beta_TT_a(t)+\beta_SS_{\downarrow}(t)+\beta_UU(t)
-\right].
-# A Thermal-Memory Model for Reconstruction and Projection of Lake Surface Temperature from Atmospheric Forcing
-
-This repository contains a Python/Streamlit implementation of a reduced-order thermal-memory model for reconstructing and projecting **Lake Surface Temperature (LST)** from sparse observed LST and continuous atmospheric forcing.
-
-> In this repository, **LST means Lake Surface Temperature**. In publications, `LSWT` may be preferable because `LST` is also commonly used for Land Surface Temperature.
-
-## Core inputs
-
-The web tool uses:
-
-- air temperature ($T_a$), °C
-- incoming shortwave solar radiation ($S_{\downarrow}$), W m$^{-2}$
-- wind speed ($U$), m s$^{-1}$
-- sparse observed Lake Surface Temperature, °C
-
-The core atmospheric forcing is
-
-$$
-T_E(t) = \beta_0 + \beta_T T_a(t) + \beta_S S_{\downarrow}(t) + \beta_U U(t)
-$$
-
-and the recursive thermal-memory model is
-
-$$
-T_L(t) =
+T_L(t)
+=
 e^{-\Delta t/\tau}T_L(t-\Delta t)
 +
 \left(1-e^{-\Delta t/\tau}\right)T_E(t).
@@ -67,7 +32,8 @@ $$
 Therefore,
 
 $$
-T_L(t) =
+T_L(t)
+=
 e^{-\Delta t/\tau}T_L(t-\Delta t)
 +
 \left(1-e^{-\Delta t/\tau}\right)
@@ -133,7 +99,14 @@ Whenever fine-resolution atmospheric data are available, it is scientifically pr
 The basic model estimates five parameters jointly:
 
 $$
-\Theta=\{\beta_0,\beta_T,\beta_S,\beta_U,\tau\}.
+\Theta=
+\left\{
+\beta_0,
+\beta_T,
+\beta_S,
+\beta_U,
+\tau
+\right\}.
 $$
 
 The implementation minimizes errors between simulated and observed LST at dates where observed LST exists.
@@ -194,6 +167,10 @@ The framework is not geographically restricted by its equations. Region-specific
 
 Rodhe, B. (1952). *On the Relation Between Air Temperature and Ice Formation in the Baltic*. Geografiska Annaler, 34(3–4), 175–202.
 
-Piccolroaz, S., Toffolon, M., & Majone, B. (2013). *A simple lumped model to convert air temperature into surface water temperature in lakes*. Hydrology and Earth System Sciences, 17, 3323–3338.ature in lakes with different morphology using air temperature*. Limnology and Oceanography, 59(6), 2185–2202.
+Piccolroaz, S., Toffolon, M., & Majone, B. (2013). *A simple lumped model to convert air temperature into surface water temperature in lakes*. Hydrology and Earth System Sciences, 17, 3323–3338.
 
-Piccolroaz, S., et al. (2024). *Lake Water Temperature Modeling in an Era of Climate Change: Data Sources, Models, and Future Prospects*. Reviews of Geophysics, 62.
+Toffolon, M., Piccolroaz, S., Majone, B., Soja, A.-M., Peeters, F., Schmid, M., & Wüest, A. (2014). *Prediction of surface temperature in lakes with different morphology using air temperature*. Limnology and Oceanography, 59(6), 2185–2202.
+
+Piccolroaz, S., Zhu, S., Ladwig, R., Carrea, L., Oliver, S., Piotrowski, A. P., et al. (2024). *Lake Water Temperature Modeling in an Era of Climate Change: Data Sources, Models, and Future Prospects*. Reviews of Geophysics, 62, e2023RG000816.
+
+Tau, G., Enzel, Y., McGowan, H., Lyakhovsky, V., & Lensky, N. G. (2025). *Thermal Response of Lakes to Cyclic Environmental Forcing*. Geophysical Research Letters, 52, e2025GL117731.
