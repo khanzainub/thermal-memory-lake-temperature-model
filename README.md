@@ -34,9 +34,52 @@ T_L(t)=e^{-\Delta t/\tau}T_L(t-\Delta t)
 \left[
 \beta_0+\beta_TT_a(t)+\beta_SS_{\downarrow}(t)+\beta_UU(t)
 \right].
+# A Thermal-Memory Model for Reconstruction and Projection of Lake Surface Temperature from Atmospheric Forcing
+
+This repository contains a Python/Streamlit implementation of a reduced-order thermal-memory model for reconstructing and projecting **Lake Surface Temperature (LST)** from sparse observed LST and continuous atmospheric forcing.
+
+> In this repository, **LST means Lake Surface Temperature**. In publications, `LSWT` may be preferable because `LST` is also commonly used for Land Surface Temperature.
+
+## Core inputs
+
+The web tool uses:
+
+- air temperature ($T_a$), °C
+- incoming shortwave solar radiation ($S_{\downarrow}$), W m$^{-2}$
+- wind speed ($U$), m s$^{-1}$
+- sparse observed Lake Surface Temperature, °C
+
+The core atmospheric forcing is
+
+$$
+T_E(t) = \beta_0 + \beta_T T_a(t) + \beta_S S_{\downarrow}(t) + \beta_U U(t)
 $$
 
-Here \(\tau\) is the characteristic thermal response time and
+and the recursive thermal-memory model is
+
+$$
+T_L(t) =
+e^{-\Delta t/\tau}T_L(t-\Delta t)
++
+\left(1-e^{-\Delta t/\tau}\right)T_E(t).
+$$
+
+Therefore,
+
+$$
+T_L(t) =
+e^{-\Delta t/\tau}T_L(t-\Delta t)
++
+\left(1-e^{-\Delta t/\tau}\right)
+\left[
+\beta_0
++\beta_T T_a(t)
++\beta_S S_{\downarrow}(t)
++\beta_U U(t)
+\right].
+$$
+
+Here $\tau$ is the characteristic thermal response time and
 
 $$
 M=e^{-\Delta t/\tau}
@@ -70,12 +113,15 @@ date,air_temp_c,shortwave_w_m2,wind_speed_m_s,observed_lst_c
 Choose one resolution per run.
 
 ### Daily
+
 Provide one atmospheric row for **every day**. Observed LST may be sparse. The model predicts daily LST.
 
 ### Monthly
+
 Provide one atmospheric row for **every month**. Observed LST may be available only for some months. The model predicts monthly LST.
 
 ### Yearly
+
 Provide one atmospheric row for **every year**. Observed LST may be available only for some years. The model predicts yearly LST.
 
 Do not mix daily, monthly, and yearly data in the same model run.
@@ -138,7 +184,7 @@ Before using it for publication-quality reconstruction or future climate project
 - parameter identifiability;
 - sensitivity to the number and timing of sparse LST observations;
 - out-of-sample validation;
-- uncertainty in \(\tau\) and the \(\beta\) coefficients;
+- uncertainty in $\tau$ and the $\beta$ coefficients;
 - comparison against simpler baselines;
 - performance across different lake types and climatic settings.
 
@@ -148,8 +194,6 @@ The framework is not geographically restricted by its equations. Region-specific
 
 Rodhe, B. (1952). *On the Relation Between Air Temperature and Ice Formation in the Baltic*. Geografiska Annaler, 34(3–4), 175–202.
 
-Piccolroaz, S., Toffolon, M., & Majone, B. (2013). *A simple lumped model to convert air temperature into surface water temperature in lakes*. Hydrology and Earth System Sciences, 17, 3323–3338.
-
-Toffolon, M., et al. (2014). *Prediction of surface temperature in lakes with different morphology using air temperature*. Limnology and Oceanography, 59(6), 2185–2202.
+Piccolroaz, S., Toffolon, M., & Majone, B. (2013). *A simple lumped model to convert air temperature into surface water temperature in lakes*. Hydrology and Earth System Sciences, 17, 3323–3338.ature in lakes with different morphology using air temperature*. Limnology and Oceanography, 59(6), 2185–2202.
 
 Piccolroaz, S., et al. (2024). *Lake Water Temperature Modeling in an Era of Climate Change: Data Sources, Models, and Future Prospects*. Reviews of Geophysics, 62.
