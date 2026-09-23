@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Browser-based thermal-memory model for lake-surface-temperature calibration, validation, reconstruction, and prediction from atmospheric forcing." />
+  <title>Thermal-Memory Lake Temperature Model</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero__inner">
+        <div class="eyebrow">CALIBRATION · VALIDATION · RECONSTRUCTION · PREDICTION</div>
+        <h1>A Thermal-Memory Model for Lake Surface Temperature</h1>
+        <p class="hero__lead">
+          Calibrate a lake-specific thermal-memory model, validate it on held-out observations,
+          rebuild the final model using all available observations, and then apply it for gap-filling,
+          hindcast reconstruction, remote-access periods, or future prediction — entirely in your browser.
+        </p>
+        <div class="hero__badges">
+          <span>Static web tool</span>
+          <span>Lake-specific parameters</span>
+          <span>No data upload to a server</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="notice research-notice">
+        <strong>Research prototype.</strong>
+        Recommended workflow: <strong>Calibration → Independent validation → Final model → Reconstruction &amp; prediction</strong>.
+      </section>
+
+      <section class="workflow-strip panel panel--compact">
+        <div class="workflow-chip">01 Load calibration dataset</div>
+        <div class="workflow-chip">02 Validate input</div>
+        <div class="workflow-chip">03 Calibrate &amp; reconstruct</div>
+        <div class="workflow-chip">04 Independent validation</div>
+        <div class="workflow-chip">05 Final model</div>
+        <div class="workflow-chip">06 Reconstruction &amp; prediction</div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__heading">
+          <div>
+            <span class="step">01</span>
+            <h2>Configure and load calibration dataset</h2>
+          </div>
+          <button id="downloadTemplateBtn" class="button button--ghost" type="button">Download CSV template</button>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Temporal resolution</label>
+          <div class="segmented" role="radiogroup" aria-label="Temporal resolution">
+            <label><input type="radio" name="frequency" value="Daily" checked /><span>Daily</span></label>
+            <label><input type="radio" name="frequency" value="Monthly" /><span>Monthly</span></label>
+            <label><input type="radio" name="frequency" value="Yearly" /><span>Yearly</span></label>
+          </div>
+          <p class="helper">Use one row for every selected timestep. Sparse observed LST is allowed; sparse atmospheric forcing is not.</p>
+        </div>
+
+        <div class="upload-grid">
+          <label id="dropZone" class="drop-zone" for="csvFile">
+            <input id="csvFile" type="file" accept=".csv,text/csv" />
+            <div class="drop-zone__icon" aria-hidden="true">⇧</div>
+            <div>
+              <strong>Choose or drop a calibration CSV file</strong>
+              <span>Required columns are checked automatically</span>
+            </div>
+          </label>
+          <div class="template-card">
+            <span class="template-card__title">Calibration CSV columns</span>
+            <code>date</code>
+            <code>air_temp_c</code>
+            <code>shortwave_w_m2</code>
+            <code>wind_speed_m_s</code>
+            <code>observed_lst_c</code>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button id="loadDemoBtn" class="button button--secondary" type="button">Load demo dataset</button>
+          <span id="fileName" class="file-name">No calibration dataset loaded</span>
+        </div>
+
+        <div id="statusBox" class="status-box status-box--neutral" aria-live="polite">
+          Select a temporal resolution and load a CSV to begin.
+        </div>
+      </section>
+
+      <section id="dataSection" class="panel hidden">
+        <div class="panel__heading">
+          <div>
+            <span class="step">02</span>
+            <h2>Validate calibration input</h2>
+          </div>
+        </div>
+
+        <div id="inputMetrics" class="metric-grid metric-grid--three"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Air temp (°C)</th>
+                <th>Shortwave (W m⁻²)</th>
+                <th>Wind (m s⁻¹)</th>
+                <th>Observed LST (°C)</th>
+              </tr>
+            </thead>
+            <tbody id="previewBody"></tbody>
+          </table>
+        </div>
+        <p id="previewNote" class="helper"></p>
+
+        <div class="run-row">
+          <button id="runBtn" class="button button--primary" type="button">Calibrate model and reconstruct historical LST</button>
+          <span id="runMessage" class="run-message"></span>
+        </div>
+      </section>
+
+      <section id="resultsSection" class="hidden">
+        <section class="panel">
+          <div class="panel__heading">
+            <div>
+              <span class="step">03</span>
+              <h2>Calibration results</h2>
+            </div>
+          </div>
+
+          <div id="resultMetrics" class="metric-grid metric-grid--five"></div>
+          <p id="memoryCaption" class="helper"></p>
+
+          <div class="result-grid">
+            <div class="subpanel">
+              <h3>Parameter estimates</h3>
+              <div class="table-wrap table-wrap--compact">
+                <table>
+                  <thead><tr><th>Parameter</th><th>Estimate</th><th>Meaning</th></tr></thead>
+                  <tbody id="parameterBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="subpanel equation-card">
+              <h3>Model equation</h3>
+              <div class="equation" aria-label="Thermal memory equation">
+                <div><i>T</i><sub>L</sub>(<i>t</i>) = <i>e</i><sup>−Δ<i>t</i>/τ</sup> <i>T</i><sub>L</sub>(<i>t</i>−Δ<i>t</i>)</div>
+                <div class="equation__plus">+</div>
+                <div>(1 − <i>e</i><sup>−Δ<i>t</i>/τ</sup>) [β<sub>0</sub> + β<sub>T</sub><i>T</i><sub>a</sub>(<i>t</i>) + β<sub>S</sub><i>S</i><sub>↓</sub>(<i>t</i>) + β<sub>U</sub><i>U</i>(<i>t</i>)]</div>
+              </div>
+              <div class="equation equation--small"><i>M</i> = <i>e</i><sup>−1/τ</sup></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__heading">
+            <div>
+              <span class="step">03A</span>
+              <h2>Historical reconstruction</h2>
+            </div>
+            <button id="downloadResultsBtn" class="button button--ghost" type="button">Download reconstructed CSV</button>
+          </div>
+
+          <div class="chart-card chart-card--enhanced">
+            <div class="chart-heading-row">
+              <div>
+                <h3>Observed and reconstructed LST</h3>
+                <p>Hover or move across the plot to inspect individual timesteps.</p>
+              </div>
+              <div class="chart-legend">
+                <span><i class="legend-line"></i>Reconstructed / projected LST</span>
+                <span><i class="legend-dot"></i>Observed LST</span>
+              </div>
+            </div>
+            <div id="chart" class="chart chart--interactive" role="img" aria-label="Observed and reconstructed lake surface temperature chart"></div>
+          </div>
+
+          <div class="target-card">
+            <div class="target-card__field">
+              <label for="targetSelect">Select timestep</label>
+              <select id="targetSelect"></select>
+            </div>
+            <div id="targetResult" class="target-result"></div>
+          </div>
+        </section>
+
+        <section class="panel validation-panel">
+          <div class="panel__heading">
+            <div>
+              <span class="step">04</span>
+              <h2>Independent validation</h2>
+            </div>
+            <button id="downloadValidationBtn" class="button button--ghost" type="button" disabled>Download validation CSV</button>
+          </div>
+
+          <div class="validation-explainer">
+            <div class="validation-explainer__icon">✓</div>
+            <div>
+              <strong>Chronological hold-out validation</strong>
+              <p>Observed LST values are ordered by date. The earlier observations are used to calibrate a separate validation model, while the later observations are withheld and used only for testing.</p>
+            </div>
+          </div>
+
+          <div class="validation-controls">
+            <div class="validation-control">
+              <label for="validationSplit">Calibration share of observed LST</label>
+              <div class="range-row">
+                <input id="validationSplit" type="range" min="60" max="80" step="5" value="70" />
+                <output id="validationSplitValue" for="validationSplit">70%</output>
+              </div>
+              <p class="helper">Default: 70% calibration / 30% held-out validation. The split is based only on observed LST dates, not on all daily rows.</p>
+            </div>
+            <div class="validation-action">
+              <button id="runValidationBtn" class="button button--primary" type="button">Run independent validation</button>
+              <span id="validationRunMessage" class="run-message"></span>
+            </div>
+          </div>
+
+          <div id="validationResults" class="hidden">
+            <div id="validationMetrics" class="metric-grid metric-grid--validation"></div>
+            <p id="validationCaption" class="helper"></p>
+
+            <div class="validation-chart-grid">
+              <div class="chart-card chart-card--enhanced">
+                <div class="chart-heading-row">
+                  <div>
+                    <h3>Temporal validation</h3>
+                    <p>Free-running prediction from the calibration period compared with held-out LST observations.</p>
+                  </div>
+                  <div class="chart-legend">
+                    <span><i class="legend-line legend-line--validation"></i>Validation-model prediction</span>
+                    <span><i class="legend-dot legend-dot--train"></i>Calibration observations</span>
+                    <span><i class="legend-dot legend-dot--test"></i>Held-out observations</span>
+                  </div>
+                </div>
+                <div id="validationTimeChart" class="chart chart--interactive" role="img" aria-label="Validation time series chart"></div>
+              </div>
+
+              <div class="chart-card chart-card--enhanced">
+                <div class="chart-heading-row">
+                  <div>
+                    <h3>Observed vs predicted</h3>
+                    <p>Held-out observations only; the diagonal line represents perfect agreement.</p>
+                  </div>
+                </div>
+                <div id="validationScatterChart" class="chart chart--scatter" role="img" aria-label="Observed versus predicted validation scatter plot"></div>
+              </div>
+            </div>
+
+            <div class="subpanel validation-table-panel">
+              <h3>Held-out validation observations</h3>
+              <div class="table-wrap table-wrap--compact">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Observed LST (°C)</th>
+                      <th>Predicted LST (°C)</th>
+                      <th>Residual (°C)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="validationTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel final-model-panel">
+          <div class="panel__heading">
+            <div>
+              <span class="step">05</span>
+              <h2>Final model using all observations</h2>
+            </div>
+            <button id="downloadFinalParamsBtn" class="button button--ghost" type="button" disabled>Download final parameters</button>
+          </div>
+
+          <div class="final-model-callout">
+            <p>After validation, rebuild the final lake-specific model using <strong>all reliable observed LST values</strong>. These final parameters are then carried into the reconstruction and prediction stage.</p>
+          </div>
+
+          <div class="run-row run-row--stackable">
+            <button id="buildFinalBtn" class="button button--primary" type="button">Build final model using all observations</button>
+            <span id="finalRunMessage" class="run-message"></span>
+          </div>
+
+          <div id="finalModelSection" class="hidden">
+            <div id="finalMetrics" class="metric-grid metric-grid--five"></div>
+            <p id="finalMemoryCaption" class="helper"></p>
+
+            <div class="result-grid result-grid--single-top">
+              <div class="subpanel">
+                <h3>Final parameter estimates</h3>
+                <div class="table-wrap table-wrap--compact">
+                  <table>
+                    <thead><tr><th>Parameter</th><th>Estimate</th><th>Meaning</th></tr></thead>
+                    <tbody id="finalParameterBody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="subpanel final-model-state">
+                <h3>Final model state</h3>
+                <div id="finalStateSummary" class="final-state-summary"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel application-panel">
+          <div class="panel__heading">
+            <div>
+              <span class="step">06</span>
+              <h2>Reconstruction &amp; prediction</h2>
+            </div>
+            <button id="downloadApplicationTemplateBtn" class="button button--ghost" type="button">Download application template</button>
+          </div>
+
+          <div class="application-intro">
+            <p>Use the final calibrated parameters for <strong>gap-filling</strong>, <strong>hindcast reconstruction</strong>, <strong>remote-access / sparse-observation periods</strong>, or <strong>forecast / future prediction</strong>.</p>
+          </div>
+
+          <div class="application-config-grid">
+            <div class="subpanel application-config-card">
+              <h3>1. Load application-period forcing</h3>
+              <label id="applicationDropZone" class="drop-zone drop-zone--compact" for="applicationCsvFile">
+                <input id="applicationCsvFile" type="file" accept=".csv,text/csv" />
+                <div class="drop-zone__icon" aria-hidden="true">⇧</div>
+                <div>
+                  <strong>Choose or drop an application CSV file</strong>
+                  <span>Observed LST can be blank or partly available</span>
+                </div>
+              </label>
+              <div class="action-row action-row--tight">
+                <span id="applicationFileName" class="file-name">No application dataset loaded</span>
+              </div>
+              <div id="applicationStatusBox" class="status-box status-box--neutral">Load an application dataset after building the final model.</div>
+            </div>
+
+            <div class="subpanel application-config-card">
+              <h3>2. Choose application settings</h3>
+              <div class="field-group field-group--compact">
+                <label class="field-label" for="initialStateMode">Initial state</label>
+                <select id="initialStateMode">
+                  <option value="historical_last" selected>Continue from the last modeled LST of the calibration dataset</option>
+                  <option value="first_observed">Use the first observed LST in the application dataset as the starting anchor</option>
+                </select>
+                <p class="helper">For direct continuation beyond the historical record, the first option is usually appropriate.</p>
+              </div>
+
+              <div class="checkbox-row">
+                <label class="checkbox-label">
+                  <input id="useApplicationAnchors" type="checkbox" checked />
+                  <span>Use observed LST in the application file as state re-anchors whenever available</span>
+                </label>
+              </div>
+
+              <div class="field-group field-group--compact">
+                <label class="field-label" for="applicationMode">Application mode</label>
+                <select id="applicationMode">
+                  <option value="fill_gaps">Fill missing values within the application period</option>
+                  <option value="hindcast">Reconstruct another historical or remote-access period</option>
+                  <option value="forecast">Predict / project LST forward</option>
+                </select>
+              </div>
+
+              <div class="run-row run-row--stackable">
+                <button id="runApplicationBtn" class="button button--primary" type="button">Run reconstruction / prediction</button>
+                <span id="applicationRunMessage" class="run-message"></span>
+              </div>
+            </div>
+          </div>
+
+          <div id="applicationResults" class="hidden">
+            <div class="panel-divider"></div>
+            <div id="applicationMetrics" class="metric-grid metric-grid--five"></div>
+            <p id="applicationCaption" class="helper"></p>
+
+            <div class="panel__heading panel__heading--tight">
+              <div>
+                <h3>Application-period LST</h3>
+              </div>
+              <button id="downloadApplicationBtn" class="button button--ghost" type="button">Download application CSV</button>
+            </div>
+
+            <div class="chart-card chart-card--enhanced">
+              <div class="chart-heading-row">
+                <div>
+                  <h3>Reconstructed / predicted application series</h3>
+                  <p>The chart uses the final lake-specific parameters estimated in Step 05.</p>
+                </div>
+                <div class="chart-legend">
+                  <span><i class="legend-line legend-line--application"></i>Modeled LST</span>
+                  <span><i class="legend-dot"></i>Observed LST in application file</span>
+                </div>
+              </div>
+              <div id="applicationChart" class="chart chart--interactive" role="img" aria-label="Application period lake surface temperature chart"></div>
+            </div>
+
+            <div class="target-card">
+              <div class="target-card__field">
+                <label for="applicationTargetSelect">Select application timestep</label>
+                <select id="applicationTargetSelect"></select>
+              </div>
+              <div id="applicationTargetResult" class="target-result"></div>
+            </div>
+
+            <div class="subpanel validation-table-panel">
+              <h3>Application-period preview</h3>
+              <div class="table-wrap table-wrap--compact">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Observed LST (°C)</th>
+                      <th>Modeled LST (°C)</th>
+                      <th>State source</th>
+                    </tr>
+                  </thead>
+                  <tbody id="applicationTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel limitations">
+          <details>
+            <summary>Scientific interpretation and limitations</summary>
+            <div class="limitations__body">
+              <p>This is a <strong>reduced-order, physically motivated, semi-empirical model</strong>. It is not a complete lake heat-budget or hydrodynamic model.</p>
+              <p>The model explicitly represents thermal memory through τ, but does not explicitly simulate bathymetry, mixed-layer depth, longwave radiation, humidity, inflow heat, sediment heat flux, ice processes, or vertical stratification.</p>
+              <p>Step 05 provides the final parameters that are carried into Step 06. Application quality depends on the representativeness of the calibration observations and the availability of continuous atmospheric forcing.</p>
+            </div>
+          </details>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <p>Thermal-Memory Lake Temperature Model · Browser implementation of the research prototype</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
