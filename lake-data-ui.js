@@ -30,7 +30,6 @@
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
   function addRow(name = '', lat = '', lon = '') {
-    if (rows.children.length >= 20) { show('Use up to 20 lakes per notebook.', 'warning'); return; }
     const row = document.createElement('fieldset');
     row.className = 'lake-data-row';
     const legend = document.createElement('legend'); legend.textContent = 'Lake'; row.append(legend);
@@ -55,11 +54,69 @@
   addRow('Tso Moriri', 32.897510, 78.312963);
   el('addLakeDataRow').addEventListener('click', () => addRow());
 
+
+  function parseLakeList(text) {
+    const records = [];
+    let record = [], field = '', quoted = false, closed = false;
+    text = text.replace(/^\uFEFF/, '');
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (quoted) {
+        if (c === '"') { if (text[i+1] === '"') { field += '"'; i++; } else { quoted = false; closed = true; } }
+        else field += c;
+      } else if (c === ',' || c === '\n' || c === '\r') {
+        record.push(field); field = ''; closed = false;
+        if (c !== ',') { if (c === '\r' && text[i+1] === '\n') i++; if (record.some(v => v.trim())) records.push(record); record = []; }
+      } else if (c === '"' && !field && !closed) quoted = true;
+      else { if (closed || c === '"') throw new Error('Invalid CSV quoting.'); field += c; }
+    }
+    if (quoted) throw new Error('Unclosed quoted field in CSV.');
+    record.push(field); if (record.some(v => v.trim())) records.push(record);
+    if (records.length < 2) throw new Error('Include a header and at least one lake.');
+    const header = records.shift().map(v => v.trim().toLowerCase());
+    const required = ['lake_name', 'latitude', 'longitude'];
+    if (header.length !== 3 || required.some(k => header.filter(v => v === k).length !== 1)) throw new Error('CSV columns must be lake_name, latitude, longitude.');
+    const seen = new Set();
+    return records.map((r, i) => {
+      if (r.length !== 3) throw new Error(`CSV data row ${i+1}: expected three columns.`);
+      const name = r[header.indexOf('lake_name')].trim();
+      const latitude = r[header.indexOf('latitude')].trim(), longitude = r[header.indexOf('longitude')].trim();
+      const decimal = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
+      const lat = Number(latitude), lon = Number(longitude);
+      if (!name || name.length > 80 || !decimal.test(latitude) || !decimal.test(longitude) || !Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) throw new Error(`CSV data row ${i+1}: use a lake name and valid latitude/longitude in decimal degrees.`);
+      if (seen.has(name.toLowerCase())) throw new Error(`CSV data row ${i+1}: duplicate lake name "${name}".`);
+      seen.add(name.toLowerCase());
+      return {name, lat, lon};
+    });
+  }
+  const listPanel = document.createElement('div'); listPanel.className = 'subpanel';
+  const listTitle = document.createElement('h3'); listTitle.textContent = 'Upload multiple lakes';
+  const listHint = document.createElement('p'); listHint.className = 'helper';
+  listHint.textContent = 'CSV columns: lake_name, latitude, longitude. Use decimal degrees. Upload replaces the lake entries below; you can edit them before downloading one Colab notebook for the whole list, including 100 or more lakes.';
+  const listActions = document.createElement('div'); listActions.className = 'action-row';
+  const listLabel = document.createElement('label'); listLabel.className = 'button button--secondary'; listLabel.textContent = 'Upload lake list CSV';
+  const listInput = document.createElement('input'); listInput.type = 'file'; listInput.accept = '.csv,text/csv'; listInput.setAttribute('aria-label', 'Upload lake list CSV');
+  listLabel.append(listInput);
+  const demo = document.createElement('button'); demo.type = 'button'; demo.className = 'button button--ghost'; demo.textContent = 'Download demo lake CSV';
+  demo.addEventListener('click', () => save('lake_name,latitude,longitude\nPangong Tso,33.818895,78.605780\nTso Moriri,32.897510,78.312963\n', 'lake_list_demo.csv', 'text/csv;charset=utf-8'));
+  listInput.addEventListener('change', async event => {
+    const file = event.target.files[0]; if (!file) return;
+    try {
+      if (file.size > 5000000) throw new Error('Lake list CSV exceeds 5 MB.');
+      const lakes = parseLakeList(await file.text());
+      rows.replaceChildren(); lakes.forEach(lake => addRow(lake.name, lake.lat, lake.lon));
+      show(`Loaded ${lakes.length} lakes from CSV. Choose Daily, Monthly or Yearly and download the prepared Colab notebook.`, 'success');
+    } catch (error) { show(`Lake list upload failed: ${error.message} Existing entries were kept.`, 'danger'); }
+    finally { event.target.value = ''; }
+  });
+  listActions.append(listLabel, demo); listPanel.append(listTitle, listHint, listActions); rows.before(listPanel);
+
   function getConfig() {
     const lakes = [...rows.children].map((row,index) => {
       const name = row.querySelector('[name="name"]').value.trim();
-      const lat = Number(row.querySelector('[name="lat"]').value), lon = Number(row.querySelector('[name="lon"]').value);
-      if (!name || !Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lon) || lon < -180 || lon > 180) throw new Error('Enter a name and valid coordinates for every lake.');
+      const latText = row.querySelector('[name="lat"]').value.trim(), lonText = row.querySelector('[name="lon"]').value.trim();
+      const lat = Number(latText), lon = Number(lonText);
+      if (!name || !latText || !lonText || !Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lon) || lon < -180 || lon > 180) throw new Error('Enter a name and valid coordinates for every lake.');
       return {name, lat, lon, file_stem: name.replace(/[^a-zA-Z0-9_-]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'') || `lake_${index+1}`};
     });
     if (new Set(lakes.map(l => l.name.toLowerCase())).size !== lakes.length) throw new Error('Use a different name for each lake.');
@@ -183,7 +240,7 @@ files.download(str(result_path))
   el('lakeDataForm').addEventListener('submit', event => event.preventDefault());
 
   function validateBundle(bundle) {
-    if (!bundle || bundle.format !== 'lake-thermal-memory-data-v1' || !['Daily', 'Monthly', 'Yearly'].includes(bundle.frequency) || !Array.isArray(bundle.lakes) || bundle.lakes.length > 20) throw new Error('Choose the lake_data_results.json file produced by the prepared notebook.');
+    if (!bundle || bundle.format !== 'lake-thermal-memory-data-v1' || !['Daily', 'Monthly', 'Yearly'].includes(bundle.frequency) || !Array.isArray(bundle.lakes)) throw new Error('Choose the lake_data_results.json file produced by the prepared notebook.');
     const columns = 'date,air_temp_c,shortwave_w_m2,wind_speed_m_s,observed_lst_c';
     bundle.lakes.forEach(lake => {
       if (typeof lake.name !== 'string' || !lake.name.trim() || typeof lake.csv !== 'string' || lake.csv.length > 10000000 || lake.csv.replace(/^\uFEFF/,'').split(/\r?\n/,1)[0] !== columns) throw new Error('The result file contains an invalid lake CSV or a changed column format.');
