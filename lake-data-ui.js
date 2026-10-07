@@ -145,17 +145,42 @@ files.download(str(result_path))
   }
   // Keep subsequent downloads within the user's click, without an awaited fetch.
   loadPipeline().catch(() => {});
-  el('lakeDataForm').addEventListener('submit', async event => {
-    event.preventDefault(); const button = el('prepareLakeNotebook'); button.disabled = true;
+  // A real download link retains the browser's direct user-click download action.
+  const oldDownloadButton = el('prepareLakeNotebook');
+  const notebookDownload = document.createElement('a');
+  notebookDownload.id = oldDownloadButton.id;
+  notebookDownload.className = oldDownloadButton.className;
+  notebookDownload.textContent = oldDownloadButton.textContent;
+  notebookDownload.href = '#';
+  notebookDownload.download = 'Lake_data_download.ipynb';
+  oldDownloadButton.replaceWith(notebookDownload);
+  let notebookUrl = null;
+  notebookDownload.addEventListener('click', event => {
     try {
-      const config = getConfig(); show('Preparing your notebook…');
-      const pipeline = pipelineText === null ? await loadPipeline() : pipelineText;
-      const notebook = makeNotebook(config, pipeline);
-      save(JSON.stringify(notebook,null,2),'Lake_data_download.ipynb','application/x-ipynb+json');
+      const config = getConfig();
+      if (pipelineText === null) {
+        event.preventDefault();
+        show('Loading notebook preparation. Please click Download again when ready.');
+        loadPipeline().then(() => show('Ready. Click Download prepared Colab notebook.', 'success'))
+          .catch(error => show(error.message, 'danger'));
+        return;
+      }
+      const notebook = makeNotebook(config, pipelineText);
+      const nextUrl = URL.createObjectURL(new Blob([JSON.stringify(notebook, null, 2)], {type:'application/x-ipynb+json'}));
+      if (notebookUrl) {
+        const previousUrl = notebookUrl;
+        setTimeout(() => URL.revokeObjectURL(previousUrl), 60000);
+      }
+      notebookUrl = nextUrl;
+      notebookDownload.href = nextUrl;
       show(`Notebook ready for ${config.lakes.length} lake(s). Open Colab, upload this notebook and choose Runtime → Run all.`, 'success');
-    } catch (error) { show(error.message,'danger'); }
-    finally { button.disabled = false; }
+      // Do not preventDefault: the anchor downloads through its native click.
+    } catch (error) {
+      event.preventDefault();
+      show(error.message, 'danger');
+    }
   });
+  el('lakeDataForm').addEventListener('submit', event => event.preventDefault());
 
   function validateBundle(bundle) {
     if (!bundle || bundle.format !== 'lake-thermal-memory-data-v1' || !['Daily', 'Monthly', 'Yearly'].includes(bundle.frequency) || !Array.isArray(bundle.lakes) || bundle.lakes.length > 20) throw new Error('Choose the lake_data_results.json file produced by the prepared notebook.');
