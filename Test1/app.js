@@ -6464,7 +6464,20 @@ window.__lakeBatch = {
   },
   files(result) {
     this.show(result);
+    const table = (header, rows) => [header,...rows].map(row=>row.map(csvEscape).join(',')).join('\n');
+    const v=result.validation;
+    const stages=[['calibration',result.fit],['final',result.finalFit],...(v?[['validation',v.fit]]:[])];
+    const parameterCSV=table(['stage','beta0','betaT','betaS','betaU','tau','tau_unit','M','RMSE','MAE','R2','observations'],
+      stages.map(([stage,f])=>[stage,f.beta0,f.betaT,f.betaS,f.betaU,f.tau,result.frequency==='Daily'?'days':result.frequency==='Monthly'?'months':'years',Math.exp(-1/f.tau),f.rmse,f.mae,f.r2,f.nObserved]));
+    const inputCSV=table(['date','air_temp_c','shortwave_w_m2','wind_speed_m_s','observed_lst_c'],
+      result.rows.map(r=>[dateKey(r.date),r.air_temp_c,r.shortwave_w_m2,r.wind_speed_m_s,r.observed_lst_c??'']));
+    const detailedCSV=table(['date','air_temp_c','shortwave_w_m2','wind_speed_m_s','observed_lst_c','calibration_free_run_c','final_free_run_c','validation_free_run_c','validation_group','calibration_residual_c','validation_residual_c'],
+      result.rows.map((r,i)=>[dateKey(r.date),r.air_temp_c,r.shortwave_w_m2,r.wind_speed_m_s,r.observed_lst_c??'',result.fit.freeRun[i],result.finalFit.freeRun[i],v?.fit.freeRun[i]??'',v?(v.split.trainIdx.includes(i)?'calibration':v.split.testIdx.includes(i)?'held_out':'unobserved'):'',r.observed_lst_c===null?'':result.fit.freeRun[i]-r.observed_lst_c,r.observed_lst_c===null||!v?'':v.fit.freeRun[i]-r.observed_lst_c]));
     return {
+      'input.csv':inputCSV,
+      'detailed_timeseries.csv':detailedCSV,
+      'parameters_and_fit_metrics.csv':parameterCSV,
+      'validation_metrics.csv':table(['calibration_share_percent','training_observations','held_out_observations','RMSE','MAE','R2','mean_bias','status'],[v?[v.calibrationPercent,v.split.trainIdx.length,v.split.testIdx.length,v.stats.rmse,v.stats.mae,v.stats.r2,v.stats.bias,'Complete']:['','','','','','','',result.validationError]]),
       'reconstruction.csv':rowsToCSV(result.reconstruction),
       'final_parameters.json':finalParamsToJSON(),
       'calibration.json':JSON.stringify(result.fit,(key,value)=>key==='freeRun'?undefined:value,2),
