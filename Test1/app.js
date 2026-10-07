@@ -6451,6 +6451,8 @@ window.__lakeBatch = {
     Object.assign(state,result,{applicationRows:null,applicationOutput:null});
     document.querySelector('input[name="frequency"][value="'+result.frequency+'"]').checked = true;
     renderInput(result.rows);
+    // Input rendering clears previous model state; restore this lake afterwards.
+    Object.assign(state,result,{applicationRows:null,applicationOutput:null});
     renderResults(result.fit,result.reconstruction,result.frequency);
     els.validationResults.classList.add('hidden');
     els.downloadValidationBtn.disabled = true;
