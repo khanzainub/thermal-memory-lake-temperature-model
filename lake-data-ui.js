@@ -9,6 +9,15 @@
   el('lakeDataEnd').max = localDate(end);
   el('lakeDataStart').max = localDate(end);
   let imported = [];
+  let dataFrequency = 'Daily';
+  const tabs = document.createElement('div'); tabs.className = 'action-row'; tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', 'Lake data frequency');
+  ['Daily', 'Monthly', 'Yearly'].forEach(frequency => {
+    const button = document.createElement('button'); button.type = 'button'; button.textContent = frequency; button.setAttribute('role', 'tab');
+    button.className = frequency === dataFrequency ? 'button button--secondary' : 'button button--ghost'; button.setAttribute('aria-selected', String(frequency === dataFrequency));
+    button.addEventListener('click', () => { dataFrequency = frequency; [...tabs.children].forEach(tab => { const selected = tab.textContent === frequency; tab.setAttribute('aria-selected', String(selected)); tab.className = selected ? 'button button--secondary' : 'button button--ghost'; }); });
+    tabs.append(button);
+  });
+  el('lakeDataForm').prepend(tabs);
   let rowCounter = 0;
   function show(message, kind = 'neutral') {
     status.className = `status-box status-box--${kind}`;
@@ -58,7 +67,7 @@
     lakes.forEach(lake => { const base = lake.file_stem; let i=2; while(used.has(lake.file_stem.toLowerCase())) lake.file_stem = `${base}_${i++}`; used.add(lake.file_stem.toLowerCase()); });
     const start = el('lakeDataStart').value, finish = el('lakeDataEnd').value;
     if (!start || !finish || start > finish || finish > localDate(end)) throw new Error('Choose a valid date range ending at least 10 days before today.');
-    return {start_date: start, end_date: finish, lakes};
+    return {start_date: start, end_date: finish, frequency: dataFrequency, lakes};
   }
   const codeCell = source => ({cell_type:'code', execution_count:null, metadata:{}, outputs:[], source});
   function makeNotebook(config, pipeline) {
@@ -71,13 +80,23 @@ catalog = pystac_client.Client.open(
     'https://planetarycomputer.microsoft.com/api/stac/v1',
     modifier=planetary_computer.sign_inplace
 )
-bundle = {'format': 'lake-thermal-memory-data-v1', 'frequency': 'Daily',
+bundle = {'format': 'lake-thermal-memory-data-v1', 'frequency': CONFIG.get('frequency', 'Daily'),
           'start_date': CONFIG['start_date'], 'end_date': CONFIG['end_date'],
           'created_at': datetime.now(timezone.utc).isoformat(), 'lakes': [], 'errors': []}
 summary = []
 for cfg in CONFIG['lakes']:
     try:
         df, path = build_lake_file(cfg['name'], cfg, catalog, CONFIG['start_date'], CONFIG['end_date'], OUTPUT_DIR)
+        if CONFIG.get('frequency', 'Daily') != 'Daily':
+            period = 'M' if CONFIG['frequency'] == 'Monthly' else 'Y'
+            dates = pd.to_datetime(df['date'])
+            grouped = df.assign(_period=dates.dt.to_period(period)).groupby('_period')
+            columns = ['air_temp_c', 'shortwave_w_m2', 'wind_speed_m_s', 'observed_lst_c']
+            df = grouped[columns].mean().round(3)
+            df.insert(0, 'date', df.index.to_timestamp().strftime('%Y-%m-%d'))
+            df = df.reset_index(drop=True)
+            path = OUTPUT_DIR / (cfg['file_stem'] + '_' + CONFIG['frequency'].lower() + '_model_input.csv')
+            df.to_csv(path, index=False)
         bundle['lakes'].append({'name': cfg['name'], 'lat': cfg['lat'], 'lon': cfg['lon'],
             'filename': path.name, 'csv': path.read_text(), 'daily_rows': len(df),
             'observed_lst_values': int(df['observed_lst_c'].notna().sum())})
@@ -128,7 +147,7 @@ files.download(str(result_path))
   });
 
   function validateBundle(bundle) {
-    if (!bundle || bundle.format !== 'lake-thermal-memory-data-v1' || bundle.frequency !== 'Daily' || !Array.isArray(bundle.lakes) || bundle.lakes.length > 20) throw new Error('Choose the lake_data_results.json file produced by the prepared notebook.');
+    if (!bundle || bundle.format !== 'lake-thermal-memory-data-v1' || !['Daily', 'Monthly', 'Yearly'].includes(bundle.frequency) || !Array.isArray(bundle.lakes) || bundle.lakes.length > 20) throw new Error('Choose the lake_data_results.json file produced by the prepared notebook.');
     const columns = 'date,air_temp_c,shortwave_w_m2,wind_speed_m_s,observed_lst_c';
     bundle.lakes.forEach(lake => {
       if (typeof lake.name !== 'string' || !lake.name.trim() || typeof lake.csv !== 'string' || lake.csv.length > 10000000 || lake.csv.replace(/^\uFEFF/,'').split(/\r?\n/,1)[0] !== columns) throw new Error('The result file contains an invalid lake CSV or a changed column format.');
@@ -145,12 +164,12 @@ files.download(str(result_path))
       const info = document.createElement('p'); info.className = 'helper';
       const lines = lake.csv.trim().split(/\r?\n/).slice(1);
       const observed = lines.filter(line => line.split(',')[4]?.trim()).length;
-      info.textContent = `${lines.length} daily rows · ${observed} observed LST dates`;
+      info.textContent = `${lines.length} ${bundle.frequency.toLowerCase()} rows · ${observed} observed LST dates`;
       const coordinates = document.createElement('p'); coordinates.className = 'helper'; coordinates.textContent = `Latitude: ${lake.lat} · Longitude: ${lake.lon}`;
       card.append(title,info,coordinates);
       if (observed < 10) { const note = document.createElement('p'); note.className='helper'; note.textContent='Fewer than 10 observed LST values. The existing calibration requirements still apply.'; card.append(note); }
       const actions = document.createElement('div'); actions.className = 'action-row';
-      const filename = (typeof lake.filename === 'string' ? lake.filename : `${lake.name}_daily_model_input.csv`).replace(/[^a-zA-Z0-9_.-]/g,'_');
+      const filename = (typeof lake.filename === 'string' ? lake.filename : `${lake.name}_${bundle.frequency.toLowerCase()}_model_input.csv`).replace(/[^a-zA-Z0-9_.-]/g,'_');
       const download = document.createElement('button'); download.type='button'; download.className='button button--ghost'; download.textContent='Download CSV';
       download.addEventListener('click',()=>save(lake.csv,filename,'text/csv;charset=utf-8'));
       const calibration = document.createElement('button'); calibration.type='button'; calibration.className='button button--secondary'; calibration.textContent='Load for calibration';
@@ -158,18 +177,18 @@ files.download(str(result_path))
         const app = window.__thermalMemoryApp;
         const current = app.getState();
         if (current.fit && !window.confirm('Loading this lake replaces the current calibration and clears its fitted results. Continue?')) return;
-        const daily=document.querySelector('input[name="frequency"][value="Daily"]');
+        const daily=document.querySelector(`input[name="frequency"][value="${bundle.frequency}"]`);
         daily.checked=true; daily.dispatchEvent(new Event('change',{bubbles:true}));
         await app.loadTextDataset(lake.csv,filename);
         if (!app.getState().rows) { show('The model rejected this dataset. See the input validation message below.','danger'); return; }
-        show(`${lake.name} loaded for daily calibration. Use the existing Calibrate & reconstruct button below.`,'success');
+        show(`${lake.name} loaded for ${bundle.frequency.toLowerCase()} calibration. Use the existing Calibrate & reconstruct button below.`,'success');
         el('dataSection').scrollIntoView({behavior:'smooth',block:'start'});
       });
       const application = document.createElement('button'); application.type='button'; application.className='button button--secondary'; application.textContent='Load for application';
       application.addEventListener('click',async()=>{
         const app=window.__thermalMemoryApp, current=app.getState();
         if (!current.finalFit) { show('First calibrate and build the final model for this same lake, then load its application data.','warning'); return; }
-        if(current.frequency !== 'Daily') { show('This CSV is daily. Build a daily final model before using it for application.','warning'); return; }
+        if(current.frequency !== bundle.frequency) { show(`This CSV is ${bundle.frequency.toLowerCase()}. Build a ${bundle.frequency.toLowerCase()} final model before using it for application.`,'warning'); return; }
         if(current.sourceName !== filename && !window.confirm('Use only parameters fitted for this same lake. Is the current final model for this lake?')) return;
         await app.loadApplicationDataset(lake.csv,filename);
         if(!app.getState().applicationRows) {show('The model rejected this application dataset. See its validation message.','danger');return;}
