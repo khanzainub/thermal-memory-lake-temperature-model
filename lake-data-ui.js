@@ -101,13 +101,26 @@ files.download(str(result_path))
       codeCell(setup), codeCell(pipeline), codeCell(run)
     ]};
   }
+  let pipelineText = null;
+  let pipelineRequest = null;
+  function loadPipeline() {
+    if (!pipelineRequest) {
+      pipelineRequest = fetch('data-download/lake_data.py').then(async response => {
+        if (!response.ok) throw new Error('Could not load the data pipeline. Refresh and try again.');
+        pipelineText = await response.text();
+        return pipelineText;
+      }).catch(error => { pipelineRequest = null; throw error; });
+    }
+    return pipelineRequest;
+  }
+  // Keep subsequent downloads within the user's click, without an awaited fetch.
+  loadPipeline().catch(() => {});
   el('lakeDataForm').addEventListener('submit', async event => {
     event.preventDefault(); const button = el('prepareLakeNotebook'); button.disabled = true;
     try {
       const config = getConfig(); show('Preparing your notebook…');
-      const response = await fetch('data-download/lake_data.py');
-      if (!response.ok) throw new Error('Could not load the data pipeline. Refresh and try again.');
-      const notebook = makeNotebook(config, await response.text());
+      const pipeline = pipelineText === null ? await loadPipeline() : pipelineText;
+      const notebook = makeNotebook(config, pipeline);
       save(JSON.stringify(notebook,null,2),'Lake_data_download.ipynb','application/x-ipynb+json');
       show(`Notebook ready for ${config.lakes.length} lake(s). Open Colab, upload this notebook and choose Runtime → Run all.`, 'success');
     } catch (error) { show(error.message,'danger'); }
