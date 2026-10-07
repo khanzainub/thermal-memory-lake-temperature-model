@@ -27,6 +27,34 @@
     </header>
 
     <main class="container">
+      <section class="panel lake-data-panel" aria-labelledby="lakeDataTitle">
+        <details id="lakeDataDetails">
+          <summary><span class="step">DATA</span><span id="lakeDataTitle">Get lake data with Google Colab</span></summary>
+          <p class="helper">Enter multiple lakes here. Download a ready-to-run notebook, sign in on Google Colab, run it, and import its result file below. Each lake keeps its own daily CSV in the model's existing format.</p>
+          <div class="notice lake-data-notice">Google sign-in happens on Colab. You must upload the prepared notebook and choose <strong>Runtime → Run all</strong> there; this page does not start a Colab runtime automatically.</div>
+          <form id="lakeDataForm">
+            <div class="lake-data-dates">
+              <label>Start date<input id="lakeDataStart" type="date" value="2020-01-01" required></label>
+              <label>End date<input id="lakeDataEnd" type="date" required></label>
+            </div>
+            <p class="helper">Default end date: today minus 10 days. ERA5 hourly means; Landsat 8/9 scenes with cloud cover strictly below 2%; one pixel at your coordinate. Choose a point over lake water.</p>
+            <div id="lakeDataRows"></div>
+            <div class="action-row">
+              <button id="addLakeDataRow" type="button" class="button button--secondary">+ Add lake</button>
+              <button type="submit" id="prepareLakeNotebook" class="button button--primary">1. Download prepared Colab notebook</button>
+              <a class="button button--ghost lake-data-link" href="https://colab.research.google.com/" target="_blank" rel="noopener noreferrer">2. Open Colab / Google sign-in ↗</a>
+            </div>
+          </form>
+          <ol class="lake-data-instructions">
+            <li>In Colab, choose <strong>File → Upload notebook</strong> and select the downloaded <code>.ipynb</code> file. Your lakes are already filled in.</li>
+            <li>Choose <strong>Runtime → Run all</strong>. Allow time for the weather and satellite downloads. The notebook downloads one <code>lake_data_results.json</code> file containing the separate CSVs.</li>
+            <li>Return here and import that result file. Download any lake's CSV or load it directly into calibration or application.</li>
+          </ol>
+          <label class="button button--ghost lake-data-import">3. Import Colab result file<input id="lakeDataBundle" type="file" accept=".json,application/json"></label>
+          <div id="lakeDataStatus" class="status-box status-box--neutral" role="status">Add your lakes to prepare a notebook. No Google password is entered on this page.</div>
+          <div id="lakeDataResults" class="lake-data-results"></div>
+        </details>
+      </section>
       <section class="notice research-notice">
         <strong>Research prototype.</strong>
         Recommended workflow: <strong>Calibration → Independent validation → Final model → Reconstruction &amp; prediction</strong>.
@@ -452,5 +480,6 @@
 
   <script src="app.js"></script>
   <script src="plot-ui.js"></script>
+  <script src="lake-data-ui.js"></script>
 </body>
 </html>

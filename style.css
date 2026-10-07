@@ -572,3 +572,29 @@ footer { color: #53665d; }
 /* Keep wide tables and equations inside their own scrolling regions. */
 .result-grid > *, .application-config-grid > *, .validation-controls > *,
 .target-card > *, .validation-chart-grid > * { min-width: 0; }
+
+/* Optional Colab data section. */
+.lake-data-panel summary { display: flex; gap: 12px; align-items: center; cursor: pointer; font-size: 1.2rem; font-weight: 650; color: var(--navy); }
+.lake-data-panel summary::after { content: '+'; margin-left: auto; font-size: 1.5rem; }
+.lake-data-panel details[open] summary::after { content: '−'; }
+.lake-data-notice { margin: 16px 0; padding: 14px; box-shadow: none; font-size: .87rem; }
+.lake-data-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 18px 0 8px; }
+.lake-data-panel label { display: grid; gap: 6px; font-size: .85rem; font-weight: 600; min-width: 0; }
+.lake-data-panel input:not([type=file]) { width: 100%; min-height: 44px; padding: 10px; border: 1px solid #bfcfd5; border-radius: 7px; color: var(--ink); background: white; }
+.lake-data-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; align-items: end; gap: 12px; margin: 16px 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.lake-data-row legend { color: var(--muted); font-size: .8rem; }
+.lake-data-link { text-decoration: none; display: inline-flex; align-items: center; }
+.lake-data-instructions { padding-left: 22px; font-size: .88rem; color: var(--muted); }
+.lake-data-instructions li { margin: 10px 0; }
+.lake-data-import { display: inline-flex !important; cursor: pointer; position: relative; margin-top: 8px; }
+.lake-data-import input { position: absolute; opacity: 0; inset: 0; width: 100%; cursor: pointer; }
+.lake-data-import:focus-within { outline: 3px solid #25837c; outline-offset: 3px; }
+.lake-data-results { display: grid; gap: 14px; margin-top: 18px; }
+.lake-data-result h3 { margin-bottom: 4px; }
+@media(max-width:720px) {
+  .lake-data-panel summary { font-size: 1.05rem; }
+  .lake-data-row { grid-template-columns: 1fr 1fr; }
+  .lake-data-row label:first-of-type { grid-column: 1 / -1; }
+  .lake-data-row button { grid-column: 1 / -1; justify-self: start; }
+  .lake-data-dates { grid-template-columns: 1fr; }
+}
