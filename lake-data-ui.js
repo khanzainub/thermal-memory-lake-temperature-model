@@ -75,6 +75,7 @@
     const setup = `import json\nfrom pathlib import Path\nCONFIG = json.loads(${JSON.stringify(JSON.stringify(config))})\nOUTPUT_DIR = Path("lake_csv_outputs")\nOUTPUT_DIR.mkdir(exist_ok=True)\n`;
     const run = `
 from datetime import datetime, timezone
+from tempfile import TemporaryDirectory
 from google.colab import files
 catalog = pystac_client.Client.open(
     'https://planetarycomputer.microsoft.com/api/stac/v1',
@@ -86,7 +87,12 @@ bundle = {'format': 'lake-thermal-memory-data-v1', 'frequency': CONFIG.get('freq
 summary = []
 for cfg in CONFIG['lakes']:
     try:
-        df, path = build_lake_file(cfg['name'], cfg, catalog, CONFIG['start_date'], CONFIG['end_date'], OUTPUT_DIR)
+        frequency = CONFIG.get('frequency', 'Daily')
+        if frequency == 'Daily':
+            df, path = build_lake_file(cfg['name'], cfg, catalog, CONFIG['start_date'], CONFIG['end_date'], OUTPUT_DIR)
+        else:
+            with TemporaryDirectory(prefix='lake_processing_') as scratch_dir:
+                df, _ = build_lake_file(cfg['name'], cfg, catalog, CONFIG['start_date'], CONFIG['end_date'], Path(scratch_dir))
         if CONFIG.get('frequency', 'Daily') != 'Daily':
             period = 'M' if CONFIG['frequency'] == 'Monthly' else 'Y'
             dates = pd.to_datetime(df['date'])
@@ -97,6 +103,11 @@ for cfg in CONFIG['lakes']:
             df = df.reset_index(drop=True)
             path = OUTPUT_DIR / (cfg['file_stem'] + '_' + CONFIG['frequency'].lower() + '_model_input.csv')
             df.to_csv(path, index=False)
+        # Remove only this lake's obsolete generated frequency outputs on reruns.
+        for other_frequency in ('daily', 'monthly', 'yearly'):
+            if other_frequency != frequency.lower():
+                obsolete = OUTPUT_DIR / (cfg['file_stem'] + '_' + other_frequency + '_model_input.csv')
+                obsolete.unlink(missing_ok=True)
         bundle['lakes'].append({'name': cfg['name'], 'lat': cfg['lat'], 'lon': cfg['lon'],
             'filename': path.name, 'csv': path.read_text(), 'daily_rows': len(df),
             'observed_lst_values': int(df['observed_lst_c'].notna().sum())})
