@@ -2139,10 +2139,10 @@ function drawChart(
   yMin -= pad;
   yMax += pad;
 
-  const W = 1100;
+  const W = Math.max(540, Math.min(1100, window.innerWidth - 100));
   const H = 410;
   const left = 66;
-  const right = 28;
+  const right = 54;
   const top = 28;
   const bottom = 56;
 
@@ -3406,10 +3406,10 @@ function drawValidationTimeChart(
   yMin -= pad;
   yMax += pad;
 
-  const W = 1100;
+  const W = Math.max(540, Math.min(1100, window.innerWidth - 100));
   const H = 410;
   const left = 66;
-  const right = 28;
+  const right = 54;
   const top = 28;
   const bottom = 56;
 
@@ -5110,10 +5110,10 @@ function drawApplicationChart(
   yMin -= pad;
   yMax += pad;
 
-  const W = 1100;
+  const W = Math.max(540, Math.min(1100, window.innerWidth - 100));
   const H = 410;
   const left = 66;
-  const right = 28;
+  const right = 54;
   const top = 28;
   const bottom = 56;
 
