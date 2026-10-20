@@ -598,3 +598,137 @@ footer { color: #53665d; }
   .lake-data-row button { grid-column: 1 / -1; justify-self: start; }
   .lake-data-dates { grid-template-columns: 1fr; }
 }
+
+/* === Scientific lake-blue palette | UI-only theme | 2026-10-20 === */
+:root {
+  --bg: #f1f6f9;
+  --surface: #ffffff;
+  --surface-soft: #edf5f9;
+  --ink: #21384a;
+  --muted: #506679;
+  --line: #d6e3eb;
+  --accent: #126b91;
+  --accent-dark: #0c5273;
+  --accent-soft: #e5f3f9;
+  --navy: #173b55;
+  --success: #196b57;
+  --warning: #94601c;
+  --danger: #a33d48;
+  --shadow: 0 6px 24px rgba(21, 54, 78, .055);
+}
+
+body { background: var(--bg); }
+
+.hero {
+  background:
+    radial-gradient(circle at 89% 4%, rgba(114, 209, 224, .18), transparent 36%),
+    linear-gradient(118deg, #102d48 0%, #174a68 57%, #0a637e 100%);
+  border-top-color: #78c5d5;
+}
+.eyebrow { color: #bfeaf2; }
+.hero__lead { color: #edf6fa; }
+.hero__badges span {
+  background: rgba(207, 240, 247, .08);
+  border-color: rgba(207, 240, 247, .27);
+  color: #eefaff;
+}
+
+.research-notice {
+  background: #f7fbfe;
+  border-left-color: var(--accent);
+}
+.workflow-strip { background: #ffffff; }
+.workflow-chip {
+  background: #eaf4f9;
+  border: 1px solid #d5e7f0;
+  color: #204a66;
+}
+.step { background: var(--accent-soft); color: var(--accent-dark); }
+.panel__heading { border-bottom-color: var(--line); }
+.panel h2, .panel h3, .chart-heading-row h3 { color: var(--navy); }
+
+.button--primary {
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(13, 83, 119, .15);
+}
+.button--primary:hover:not(:disabled) { background: var(--accent-dark); }
+.button--secondary { background: #e5f0f6; color: #164d6e; }
+.button--secondary:hover:not(:disabled) { background: #d8eaf3; }
+.button--ghost { background: #ffffff; color: var(--accent-dark); border-color: #a9c6d7; }
+.button--ghost:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent); }
+
+:where(button, select, input, summary, .chart):focus-visible,
+.lake-data-import:focus-within { outline-color: #1785a9; }
+.segmented input:focus-visible + span { outline-color: #1785a9; }
+.segmented { background: #e8f1f6; }
+.segmented span { color: #4b667a; }
+.segmented input:checked + span { background: #ffffff; color: var(--accent-dark); }
+
+.drop-zone { background: #f8fcfe; border-color: #97b8ca; }
+.drop-zone:hover, .drop-zone.dragover { background: var(--accent-soft); border-color: var(--accent); }
+.drop-zone__icon { background: #dceef6; color: #0c6085; }
+.template-card {
+  background: #eef6fb;
+  color: #214b64;
+  border-color: #d1e4ef;
+}
+.template-card__title { color: #4b667b; }
+.template-card code { background: rgba(255, 255, 255, .83); }
+
+.metric, .subpanel, .validation-control, .validation-action,
+.target-card__field, .target-result, .checkbox-row { background: #f9fcfe; }
+.metric__label { color: #526a7c; }
+.metric__value { color: var(--navy); }
+th { background: #eaf3f8; color: #475f70; }
+th, td { border-bottom-color: #dfeaf0; }
+tbody tr:hover { background: #f0f7fb; }
+.table-wrap { border-color: var(--line); }
+
+.equation-card {
+  background: linear-gradient(135deg, #153c58, #0b5b78);
+  color: #ffffff;
+}
+.equation-card h3 { color: #f0faff; }
+
+.chart-card--enhanced {
+  background:
+    radial-gradient(circle at 96% 0%, rgba(18, 107, 145, .045), transparent 34%),
+    #ffffff;
+}
+.chart-heading-row h3 { color: var(--navy); }
+.chart-legend { color: #425c70; }
+/* Keep legends matched to existing JS plot-series colours. */
+.legend-line { background: #0f6f76; }
+.legend-line--validation { background: #5069a8; }
+.legend-line--application { background: #8b5cf6; }
+.legend-dot--train { background: #0f6f76; }
+.legend-dot--test, .legend-dot { background: #d05b58; }
+.chart text { fill: #455c70; }
+.chart svg line[stroke='#e7eef1'],
+.chart svg line[stroke='#eef3f5'] { stroke: #dfe9ef; }
+.chart-tooltip { background: rgba(20, 46, 67, .96); }
+
+.validation-explainer {
+  background: linear-gradient(135deg, #edf7fc, #f8fcff);
+  border-color: #cfe3ef;
+}
+.validation-explainer__icon { background: #dceef7; color: var(--accent-dark); }
+.final-model-callout, .application-intro {
+  background: linear-gradient(135deg, #f0f8fc, #ffffff);
+  border-color: #d3e6ef;
+}
+.workflow-chip, .final-state-summary .metric-inline { border-color: #d5e5ee; }
+.final-state-summary .metric-inline { background: #ffffff; }
+.panel-divider { background: linear-gradient(90deg, transparent, #d3e2eb 14%, #d3e2eb 86%, transparent); }
+.plot-export-status { color: #42647b; }
+
+.status-box--neutral { background: #f3f8fb; color: #4e6577; border-color: #d6e5ed; }
+.status-box--success { background: #ebf7f2; color: #185c48; border-color: #b5dccd; }
+.status-box--warning { background: #fff8ed; color: #80541a; border-color: #e8d4b0; }
+.status-box--danger { background: #fff1f2; color: #8d303f; border-color: #ecc5cc; }
+
+.lake-data-panel input:not([type=file]), select { border-color: #aebfcc; }
+.lake-data-panel summary { color: var(--navy); }
+.lake-data-row { border-color: var(--line); }
+footer { color: #54697b; }
