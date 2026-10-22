@@ -3,25 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Browser-based thermal-memory model for lake-surface-temperature calibration, validation, reconstruction, and prediction from atmospheric forcing." />
-  <title>Thermal-Memory Lake Temperature Model</title>
-  <link rel="stylesheet" href="style.css?v=08769840c09a" />
+  <meta name="description" content="ReST-Lake: Remote Sensing–Integrated Thermal Response Model for Lakes. Calibrate, validate, and reconstruct lake surface water temperature using satellite observations and atmospheric forcing." />
+  <title>ReST-Lake | Remote Sensing–Integrated Thermal Response Model for Lakes</title>
+  <link rel="stylesheet" href="style.css?v=restlake-20261023" />
 </head>
 <body>
   <div class="page-shell">
     <header class="hero">
       <div class="hero__inner">
-        <div class="eyebrow">CALIBRATION · VALIDATION · RECONSTRUCTION · PREDICTION</div>
-        <h1>A Thermal-Memory Model for Lake Surface Temperature</h1>
-        <p class="hero__lead">
-          Calibrate a lake-specific thermal-memory model, validate it on held-out observations,
-          rebuild the final model using all available observations, and then apply it for gap-filling,
-          hindcast reconstruction, remote-access periods, or future prediction — entirely in your browser.
-        </p>
-        <div class="hero__badges">
-          <span>Static web tool</span>
-          <span>Lake-specific parameters</span>
-          <span>No data upload to a server</span>
+        <div class="hero__copy">
+          <div class="eyebrow"><span class="hero__live-dot"></span> REMOTE SENSING · LAKE THERMODYNAMICS · RECONSTRUCTION</div>
+          <div class="hero__brand">ReST<span>–</span>Lake <span class="hero__edition">RESEARCH PROTOTYPE</span></div>
+          <h1>Remote Sensing–Integrated<br><em>Thermal Response</em> Model for Lakes</h1>
+          <p class="hero__lead">Explore the thermal response of lakes using satellite-derived surface temperature and atmospheric forcing. Calibrate lake-specific dynamics, independently validate predictions, and reconstruct missing observations.</p>
+          <div class="hero__badges">
+            <span>Satellite LSWT observations</span><span>Atmospheric forcing</span><span>Chronological validation</span><span>Browser-based</span>
+          </div>
+        </div>
+        <div class="hero__visual" aria-label="Illustrative scientific diagram showing satellite observation, lake thermal response and temperature time series; not measured data">
+          <div class="hero__visual-head"><span><i></i> THERMAL RESPONSE · CONCEPTUAL</span><span>LSWT / AIR TEMP</span></div>
+          <svg viewBox="0 0 540 340" role="img" aria-label="Illustrative satellite remote sensing and two temperature response curves, not actual lake measurements">
+            <defs>
+              <linearGradient id="lakeFill" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#36c9da"/><stop offset="1" stop-color="#1855aa"/></linearGradient>
+              <linearGradient id="curveA" x1="0" x2="1"><stop stop-color="#5de2e0"/><stop offset="1" stop-color="#83baff"/></linearGradient>
+              <linearGradient id="curveB" x1="0" x2="1"><stop stop-color="#ffbd75"/><stop offset="1" stop-color="#ff7b83"/></linearGradient>
+            </defs>
+            <g opacity=".25" stroke="#a5d9ef" stroke-width="1"><path d="M42 66H500 M42 116H500 M42 166H500 M42 216H500 M42 266H500"/><path d="M42 48V276 M118 48V276 M194 48V276 M270 48V276 M346 48V276 M422 48V276 M500 48V276"/></g>
+            <g transform="translate(395 26) rotate(-16)"><rect x="0" y="0" width="57" height="31" rx="7" fill="#b6def1" stroke="#fff" stroke-opacity=".75"/><rect x="17" y="7" width="23" height="17" rx="3" fill="#1b5171"/><path d="M-38 4H-5V26H-38z M62 4H95V26H62z" fill="#3b83b2" stroke="#9cdeef"/><path d="M28 31V54" stroke="#9cdeef" stroke-dasharray="4 5"/></g>
+            <path d="M42 226C97 205 143 233 190 219S278 207 329 222S418 230 500 209L500 276H42Z" fill="url(#lakeFill)" opacity=".19"/>
+            <path d="M42 209 C77 186 97 109 133 131 S189 237 225 209 S286 105 327 127 S385 239 425 199 S468 125 500 143" fill="none" stroke="url(#curveB)" stroke-width="3.5" stroke-linecap="round"/>
+            <path d="M42 225 C86 214 108 171 146 166 S204 200 240 203 S302 160 337 166 S395 207 433 202 S472 171 500 167" fill="none" stroke="url(#curveA)" stroke-width="4" stroke-linecap="round"/>
+            <g fill="#071e37" stroke="#91f1f3" stroke-width="2.3"><circle cx="146" cy="166" r="5"/><circle cx="240" cy="203" r="5"/><circle cx="337" cy="166" r="5"/><circle cx="433" cy="202" r="5"/></g>
+            <text x="44" y="36" fill="#d2e7f3" font-size="11" letter-spacing="1.5">TEMPERATURE RESPONSE · ILLUSTRATION</text>
+            <text x="43" y="302" fill="#90b4cc" font-size="11">TIME →</text>
+          </svg>
+          <div class="hero__visual-foot"><span><i class="hero__legend hero__legend--air"></i> Atmospheric temperature</span><span><i class="hero__legend hero__legend--lake"></i> Lake surface response</span></div>
+          <p class="hero__visual-note">Illustrative dynamics — not observational or validation results</p>
         </div>
       </div>
     </header>
@@ -474,7 +491,7 @@
     </main>
 
     <footer>
-      <p>Thermal-Memory Lake Temperature Model · Browser implementation of the research prototype</p>
+      <p>ReST-Lake · Remote Sensing–Integrated Thermal Response Model for Lakes</p>
       <p>© 2026 Zainab Khan. All rights reserved.</p>
     </footer>
   </div>
