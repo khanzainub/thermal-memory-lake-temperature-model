@@ -756,3 +756,20 @@ footer { color: #54697b; }
 .hero__visual-note{font-size:.64rem;color:#7f9db1;margin:11px 0 0;text-align:right;}
 @media(max-width:820px){.hero{padding:46px 20px 70px}.hero__inner{grid-template-columns:1fr;gap:26px}.hero__visual{max-width:620px;width:100%;margin:0 auto}.hero__brand{font-size:clamp(2.6rem,8vw,3.8rem)}}
 @media(max-width:430px){.hero{padding:37px 15px 60px}.hero__edition{font-size:.51rem;margin-left:5px;padding:5px 7px}.hero__visual{padding:14px 10px}.hero__visual-head{font-size:.56rem}.hero__visual-foot{font-size:.64rem}.hero h1{font-size:1.28rem}}
+
+/* Hero chart refinement: smaller, quieter scientific accent */
+@media (min-width:821px) {
+  .hero__inner {grid-template-columns:minmax(0,1.38fr) minmax(0,.62fr);gap:48px;}
+  .hero__visual {max-width:350px;justify-self:end;}
+}
+.hero__visual {opacity:.76;padding:13px 12px 10px;border-color:rgba(134,209,231,.17);box-shadow:0 14px 34px rgba(0,8,20,.17);}
+.hero__visual svg {opacity:.84;}
+.hero__visual-head {font-size:.58rem;opacity:.78;}
+.hero__visual-foot {font-size:.64rem;opacity:.8;}
+.hero__visual-note {font-size:.58rem;opacity:.75;}
+@media (max-width:820px) {
+  .hero__visual {max-width:340px;margin:0 auto;}
+}
+@media (max-width:430px) {
+  .hero__visual {max-width:280px;}
+}
