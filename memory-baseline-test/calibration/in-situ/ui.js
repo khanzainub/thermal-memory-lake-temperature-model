@@ -53,42 +53,29 @@ function syncDownloadLake(){
  row.querySelector('[name="lat"]').value=coord?.lat??"";
  row.querySelector('[name="lon"]').value=coord?.lon??"";
 }
+
 function syncDateRange(){
  if(!lake)return;
- const observations=data().saved.length?data().saved:data().draft;
- const windows=C.searchWindows(observations),picker=$("windowSelect"),previous=picker.value;
- picker.replaceChildren();
+ const saved=data().saved.length?data().saved:data().draft;
+ const windows=C.searchWindows(saved);
+ const list=$("allWindowsList");
+ list.replaceChildren();
  if(!windows.length){
-   picker.add(new Option("No observation dates saved",""));
-   $("windowSummary").textContent="Save real in-situ observation dates to prepare satellite download periods.";
-   show("rangeInfo","Save observation dates before preparing the satellite download.","neutral");return;
+  $("windowSummary").textContent="Save in-situ observations first. Every resulting satellite date window will be included in one notebook.";
+  show("rangeInfo","No saved observation dates yet.","neutral");
+  return;
  }
- windows.forEach((w,i)=>picker.add(new Option((i+1)+". "+w.start+" → "+w.end+" ("+w.observation_count+" in-situ date"+(w.observation_count===1?"":"s")+")",String(i))));
- const i=previous!==""&&Number.isInteger(Number(previous))&&Number(previous)>=0&&Number(previous)<windows.length?Number(previous):0;
- picker.value=String(i);
- $("windowSummary").textContent=windows.length+" separate satellite window"+(windows.length===1?"":"s")+" generated from "+observations.length+" in-situ dates in "+[...new Set(observations.map(r=>r.date.slice(0,4)))].sort().join(", ")+". A SINGLE Colab notebook will process every window, with no downloads for the gaps.";
- setActiveWindow();
+ $("windowSummary").textContent=windows.length+" satellite download window"+(windows.length===1?"":"s")+
+   " from "+saved.length+" in-situ dates. All windows below will run automatically in ONE Colab notebook.";
+ const ul=document.createElement("ul");
+ for(let i=0;i<windows.length;i++){
+  const w=windows[i],li=document.createElement("li");
+  li.textContent="Window "+(i+1)+": "+w.start+" → "+w.end+" ("+w.observation_count+" in-situ dates)";
+  ul.append(li);
+ }
+ list.append(ul);
+ show("rangeInfo","No window selection required. Download ONE prepared notebook; Colab will process ALL "+windows.length+" windows and export one combined satellite CSV.","success");
 }
-function setActiveWindow(){
- if(!lake)return;
- const windows=C.searchWindows(data().saved.length?data().saved:data().draft),index=Number($("windowSelect").value||0),w=windows[index];
- if(!w)return;
- const cap=maxAvailable();
- $("lakeDataStart").value=w.start;$("lakeDataEnd").value=w.end>cap?cap:w.end;
- const msg="Window "+(index+1)+"/"+windows.length+": "+w.start+" to "+w.end+" (±1 calendar month around "+w.observation_count+" in-situ date"+(w.observation_count===1?"":"s")+"). ";
- if(w.start>cap)show("rangeInfo",msg+"Outside the original downloader's available dates (last allowable "+cap+").","warning");
- else if(w.end>cap)show("rangeInfo",msg+"Download end capped at "+cap+" by original source availability.","warning");
- else show("rangeInfo","One prepared Colab notebook will download all "+windows.length+" satellite windows together. "+msg+"Date-window preview only; it will NOT limit the notebook.","success");
-}
-$("windowSelect").addEventListener("change",setActiveWindow);
-for(const id of ["satelliteLat","satelliteLon"]){
- $(id).addEventListener("change",()=>{
-  if(!lake)return;
-  try{data().coords=validateCoords(false);syncDownloadLake();persist()}
-  catch(e){show("rangeInfo",e.message,"danger")}
- });
-}
-
 function invalidate(){pairs=[];run=null;$("matches").replaceChildren();$("metrics").replaceChildren();$("graph").replaceChildren();show("matchStatus","Data changed. Match dates again to update the audit.","neutral");show("calStatus","Apply correction after matching dates.","neutral");}
 function selectLake(){
  const candidate=$("lakeName").value.trim();

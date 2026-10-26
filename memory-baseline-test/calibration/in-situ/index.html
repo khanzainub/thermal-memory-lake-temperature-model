@@ -51,14 +51,13 @@
 <summary class="calibration-download-summary"><span class="step">03</span><span>Download Satellite Data <small>(Optional)</small></span></summary>
 <div class="panel download-header">
 <p class="helper">All saved in-situ dates are grouped into separate ±1-month satellite windows. Download one Colab notebook: it runs every window automatically and produces ONE combined satellite CSV.</p>
-<div class="insitu-fields"><label hidden>Automatically included satellite windows
-<select id="windowSelect" aria-label="All satellite windows included in one notebook"></select></label>
-<label>Latitude (decimal degrees)<input id="satelliteLat" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="e.g. 29.3856"></label>
+<div class="insitu-fields"><label>Latitude (decimal degrees)<input id="satelliteLat" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="e.g. 29.3856"></label>
 <label>Longitude (decimal degrees)<input id="satelliteLon" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="e.g. 79.4592"></label></div>
-<div id="windowSummary" class="helper">All observation windows will be downloaded together by one notebook.</div>
+<div id="windowSummary" class="helper">All saved in-situ date ranges will download automatically in one Colab run.</div>
+<div id="allWindowsList" class="all-windows-list" aria-live="polite"></div>
 <div id="rangeInfo" class="status-box status-box--neutral">One notebook will process every ±1-month satellite window, skipping gaps.</div></div>
 <section class="panel lake-data-panel" aria-labelledby="lakeDataTitle">
-        <div id="lakeDataDetails"><p class="helper" id="lakeDataTitle">Download one notebook → Run all windows in Colab → Upload the one combined satellite CSV.</p>
+        <div id="lakeDataDetails"><p class="helper" id="lakeDataTitle">One notebook runs every window automatically. A single combined satellite CSV is downloaded in Colab.</p>
           
           
           <form id="lakeDataForm">
@@ -70,7 +69,7 @@
             <div id="lakeDataRows"></div>
             <div class="action-row">
               <button id="addLakeDataRow" type="button" class="button button--secondary">+ Add lake</button>
-              <button type="submit" id="prepareLakeNotebook" class="button button--primary">1. Download ALL windows notebook</button>
+              <button type="submit" id="prepareLakeNotebook" class="button button--primary">1. Download satellite data for ALL windows</button>
               <a class="button button--ghost lake-data-link" href="https://colab.research.google.com/" target="_blank" rel="noopener noreferrer">2. Open Colab</a>
             </div>
           </form>
@@ -116,6 +115,6 @@
 <div id="futureMetrics" class="insitu-metrics"></div>
 </section></div></div></main>
 <script src="core.js?v=20261026-fullcsv"></script>
-<script src="lake-data-ui.js?v=all-windows-20261026"></script>
-<script src="ui.js?v=all-windows-20261026"></script>
+<script src="lake-data-ui.js?v=ALL-FOUR-WINDOWS-FINAL-20261026-cachedfix2"></script>
+<script src="ui.js?v=ALL-FOUR-WINDOWS-FINAL-20261026-cachedfix2"></script>
 </body></html>
