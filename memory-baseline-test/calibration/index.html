@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ReST-Lake | With Memory versus Baseline</title><link rel="stylesheet" href="style.css?v=restlake-20261023b"><link rel="stylesheet" href="comparison.css"></head><body><div class="page-shell"><header class="hero">
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ReST-Lake | With Memory versus Baseline</title><link rel="stylesheet" href="style.css?v=restlake-20261023b"><link rel="stylesheet" href="comparison.css"><link rel="stylesheet" href="in-situ-tab.css"></head><body><div class="page-shell"><header class="hero">
       <div class="hero__inner">
         <div class="hero__copy">
           <div class="eyebrow"><span class="hero__live-dot"></span> REMOTE SENSING · LAKE THERMODYNAMICS · RECONSTRUCTION</div>
@@ -63,9 +63,9 @@
 <div class="shared-upload"><label class="button button--primary">Upload model-input CSV<input id="sharedCsv" type="file" accept=".csv,text/csv"></label><span id="sharedFile">No CSV loaded</span></div>
 <div id="sharedStatus" class="status-box status-box--neutral" role="status">Download or choose a CSV, then run the two models separately.</div></section>
 <section id="compareModels" class="panel comparison"><div class="panel__heading"><div><span class="step">TEST</span><h2>With Memory vs Baseline</h2></div></div>
-<div class="cmp-tabs" role="tablist" aria-label="Model choice"><button id="tabMemory" role="tab" type="button" aria-selected="true" aria-controls="memoryPane" class="cmp-active">With Memory · Original</button><button id="tabBaseline" role="tab" type="button" aria-selected="false" aria-controls="baselinePane">Baseline · M = 0</button></div>
+<div class="cmp-tabs" role="tablist" aria-label="Model choice"><button id="tabMemory" role="tab" type="button" aria-selected="true" aria-controls="memoryPane" class="cmp-active">With Memory · Original</button><button id="tabBaseline" role="tab" type="button" aria-selected="false" aria-controls="baselinePane">Baseline · M = 0</button><button id="tabInSitu" role="tab" type="button" aria-selected="false" aria-controls="inSituPane">In-Situ Calibration</button></div>
 <p class="helper" id="modeNote">Unchanged original ReST-Lake. Temporal memory is estimated.</p>
 <section id="memoryPane" role="tabpanel" aria-labelledby="tabMemory"><iframe id="frameMemory" title="With Memory Model" src="with-memory/index.html" loading="eager"></iframe></section>
-<section id="baselinePane" role="tabpanel" aria-labelledby="tabBaseline" hidden><iframe id="frameBaseline" title="Baseline Model" src="baseline/index.html" loading="eager"></iframe></section></section>
+<section id="baselinePane" role="tabpanel" aria-labelledby="tabBaseline" hidden><iframe id="frameBaseline" title="Baseline Model" src="baseline/index.html" loading="eager"></iframe></section><section id="inSituPane" role="tabpanel" aria-labelledby="tabInSitu" hidden><iframe id="frameInSitu" title="In-Situ Calibration" src="in-situ/index.html" loading="lazy"></iframe></section></section>
 </main><footer class="cmp-footer">ReST-Lake scientific model comparison · Original repository files preserved</footer></div>
-<script src="comparison.js"></script><script src="lake-data-ui.js?v=compare"></script></body></html>
+<script src="comparison.js"></script><script src="lake-data-ui.js?v=compare"></script><script src="in-situ-tab.js"></script></body></html>

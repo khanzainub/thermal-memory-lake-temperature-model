@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>In-Situ Calibration — ReST-Lake</title>
+<link rel="stylesheet" href="../style.css?v=restlake-20261023b"><link rel="stylesheet" href="in-situ.css"></head>
+<body><main class="insitu-shell">
+<section class="panel">
+<div class="panel__heading"><div><span class="step">01</span><h2>Select lake</h2></div></div>
+<p class="helper">Choose a lake before adding field temperatures. Observations and bias corrections are stored separately for each lake in this browser.</p>
+<div class="insitu-fields">
+<label>Lake<select id="lakeSelect"><option value="">Select a lake…</option></select></label>
+<label id="otherWrap" hidden>Custom lake name<input id="otherName" type="text" maxlength="80" placeholder="Enter lake name"></label>
+<label>Latitude (°) — required for satellite download<input id="lat" type="number" min="-90" max="90" step="any" placeholder="Enter lake latitude"></label>
+<label>Longitude (°) — required for satellite download<input id="lon" type="number" min="-180" max="180" step="any" placeholder="Enter lake longitude"></label>
+</div>
+<div class="action-row"><button class="button button--primary" type="button" id="chooseLake">Use selected lake</button><span id="selectedLakeLabel" class="file-name"></span></div>
+</section>
+<div id="workspace" hidden>
+<section class="panel">
+<div class="panel__heading"><div><span class="step">02</span><h2>In-situ observations</h2></div></div>
+<p class="helper">Enter observed temperatures in °C for arbitrary valid dates. CSV must contain exactly <code>date,insitu_temp_c</code>. You can add, edit, delete, save and export observations without changing either model.</p>
+<div class="action-row"><label class="button button--secondary">Upload in-situ CSV<input id="insituUpload" class="hidden-input" type="file" accept=".csv,text/csv"></label>
+<button class="button button--ghost" type="button" id="template">Download CSV template</button>
+<button class="button button--ghost" type="button" id="downloadInsitu">Download saved observations</button></div>
+<div class="insitu-fields"><label>Observation date<input type="date" id="insituDate"></label>
+<label>Measured temperature (°C)<input type="number" id="insituTemp" step="any" placeholder="e.g. 23.5"></label></div>
+<div class="action-row"><button class="button button--secondary" id="upsert" type="button">Add observation</button>
+<button class="button button--ghost" id="cancelEdit" type="button" hidden>Cancel editing</button>
+<button class="button button--primary" id="saveObs" type="button">Save observations</button></div>
+<p class="helper" id="obsSummary">No observations entered yet.</p>
+<div class="table-wrap"><table><thead><tr><th>Date</th><th>Temperature (°C)</th><th>Actions</th></tr></thead>
+<tbody id="observations"></tbody></table></div>
+<div class="status-box status-box--neutral" role="status" id="obsStatus">Add or upload observations, then save.</div>
+</section>
+<section id="downloadArea">
+<div class="panel download-header"><div class="panel__heading"><div><span class="step">03</span><h2>Satellite LST download · ±1 month</h2></div></div>
+<p class="helper">The existing Google Colab downloader appears directly below, with its original lake-data controls, Landsat 8/9 pipeline and five-column CSV format. The requested period is automatically set to one month before the first in-situ date and one month after the last in-situ date. Google sign-in happens only on the Colab website.</p>
+<div id="rangeInfo" class="status-box status-box--neutral">Save dated in-situ observations to synchronize the satellite search window.</div></div>
+<section class="panel lake-data-panel" aria-labelledby="lakeDataTitle">
+        <details id="lakeDataDetails">
+          <summary><span class="step">DATA</span><span id="lakeDataTitle">Get lake data with Google Colab</span></summary>
+          <p class="helper">Enter multiple lakes here. Download a ready-to-run notebook, sign in on Google Colab, run it, and import its result file below. Each lake keeps its own daily CSV in the model's existing format.</p>
+          <div class="notice lake-data-notice">Google sign-in happens on Colab. You must upload the prepared notebook and choose <strong>Runtime → Run all</strong> there; this page does not start a Colab runtime automatically.</div>
+          <form id="lakeDataForm">
+            <div class="lake-data-dates">
+              <label>Start date<input id="lakeDataStart" type="date" value="2020-01-01" required></label>
+              <label>End date<input id="lakeDataEnd" type="date" required></label>
+            </div>
+            <p class="helper">Default end date: today minus 10 days. ERA5 hourly means; Landsat 8/9 scenes with cloud cover strictly below 2%; one pixel at your coordinate. Choose a point over lake water.</p>
+            <div id="lakeDataRows"></div>
+            <div class="action-row">
+              <button id="addLakeDataRow" type="button" class="button button--secondary">+ Add lake</button>
+              <button type="submit" id="prepareLakeNotebook" class="button button--primary">1. Download prepared Colab notebook</button>
+              <a class="button button--ghost lake-data-link" href="https://colab.research.google.com/" target="_blank" rel="noopener noreferrer">2. Open Colab / Google sign-in ↗</a>
+            </div>
+          </form>
+          <ol class="lake-data-instructions">
+            <li>In Colab, choose <strong>File → Upload notebook</strong> and select the downloaded <code>.ipynb</code> file. Your lakes are already filled in.</li>
+            <li>Choose <strong>Runtime → Run all</strong>. Allow time for the weather and satellite downloads. The notebook downloads one <code>lake_data_results.json</code> file containing the separate CSVs.</li>
+            <li>Return here and import that result file. Download any lake's CSV or load it directly into calibration or application.</li>
+          </ol>
+          <label class="button button--ghost lake-data-import">3. Import Colab result file<input id="lakeDataBundle" type="file" accept=".json,application/json"></label>
+          <div id="lakeDataStatus" class="status-box status-box--neutral" role="status">Add your lakes to prepare a notebook. No Google password is entered on this page.</div>
+          <div id="lakeDataResults" class="lake-data-results"></div>
+        </details>
+      </section>
+</section>
+<section class="panel">
+<div class="panel__heading"><div><span class="step">04</span><h2>Load satellite LST &amp; match dates</h2></div></div>
+<p class="helper">Import the downloaded <code>lake_data_results.json</code> using the original control above, or import a single original five-column lake CSV. Only observed satellite temperatures are matched; absent observations are kept missing.</p>
+<div class="action-row">
+<label class="button button--secondary">Upload satellite model-input CSV<input id="satUpload" class="hidden-input" type="file" accept=".csv,text/csv"></label>
+<button id="downloadSatellite" class="button button--ghost" type="button">Download retained original satellite CSV</button>
+<span id="satCount" class="file-name">No satellite observations loaded</span></div>
+<div class="insitu-fields"><label>Maximum nearest-date difference (days)<input id="maxDays" type="number" min="0" max="365" step="1" value="3"></label></div>
+<div class="action-row"><button type="button" id="matchDates" class="button button--secondary">Match observation dates</button></div>
+<div class="status-box status-box--neutral" role="status" id="matchStatus">Import satellite observations after saving in-situ measurements.</div>
+<div class="table-wrap insitu-table"><table><thead><tr><th>In-situ date</th><th>In-situ °C</th><th>Satellite date</th><th>Satellite °C</th><th>Difference</th><th>Pair bias °C</th><th>Status</th></tr></thead>
+<tbody id="matches"></tbody></table></div>
+</section>
+<section class="panel">
+<div class="panel__heading"><div><span class="step">05</span><h2>Apply additive bias correction</h2></div></div>
+<p class="helper"><strong>Method:</strong> <code>bias = mean(T_in-situ − T_satellite)</code> over earlier calibration matches; <code>corrected LST = original satellite LST + bias</code> on existing satellite observations only. When at least three pairs are available, the earliest 70% are used to determine the correction, with later matched pairs held out for a separate assessment. Fewer pairs are exploratory only. Different measurement dates can reflect real temperature variability; inspect the date differences.</p>
+<div class="action-row"><button type="button" id="applyBias" class="button button--primary">Apply Bias Correction / Calibrate</button>
+<button type="button" id="saveResults" class="button button--secondary">Save results</button></div>
+<div id="metrics" class="insitu-metrics"></div><div class="status-box status-box--neutral" id="calStatus">Match the dates and apply correction to view results.</div>
+<h3>Original satellite LST · In-situ measurements · Bias-corrected satellite LST</h3>
+<div class="graph-container" id="graph"></div>
+<p class="helper">Individual dots are observed samples. Dashed connectors identify matched dates and show their differences. Missing observations are not interpolated.</p>
+<div class="action-row">
+<button class="button button--ghost" type="button" id="exportCorrected">Download corrected model-input CSV</button>
+<button class="button button--ghost" type="button" id="exportAudit">Download matching audit CSV</button>
+<button class="button button--ghost" type="button" id="exportMetrics">Download metrics CSV</button>
+<button class="button button--ghost" type="button" id="exportPlot">Download plot SVG</button>
+</div>
+</section></div></main>
+<script src="core.js"></script>
+<script src="lake-data-ui.js?v=source-unchanged"></script>
+<script src="ui.js"></script>
+</body></html>

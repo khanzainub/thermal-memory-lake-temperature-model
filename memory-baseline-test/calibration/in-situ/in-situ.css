@@ -1,0 +1,15 @@
+.insitu-shell{max-width:1180px;margin:0 auto;padding:0 12px 24px}
+.insitu-shell .panel{margin-bottom:16px}.insitu-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px;margin:14px 0}
+.insitu-fields label{font-size:13px;font-weight:650;color:#24546b}.insitu-fields input,.insitu-fields select{box-sizing:border-box;width:100%;padding:10px;border-radius:9px;border:1px solid #bdd4dc;margin-top:7px;color:#203e53;background:#fff;font-size:14px}
+.hidden-input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}[hidden]{display:none!important}
+.insitu-shell table td,.insitu-shell table th{padding:8px 10px;font-size:12px;white-space:nowrap}
+.insitu-shell td button{font-size:12px;padding:4px 8px}.insitu-shell .table-wrap{overflow:auto}.insitu-table{max-height:350px;overflow-y:auto}
+.insitu-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0}
+.graph-container{padding:10px;background:#f8fbff;border:1px solid #d8e5ed;border-radius:12px;overflow-x:auto;min-height:210px}.graph-container svg{min-width:640px;width:100%;height:auto;display:block}
+.download-header{margin-bottom:0!important}.lake-data-panel{margin-top:0!important}
+.lake-data-panel #lakeDataResults .action-row button:not(:first-child){display:none!important}
+.lake-data-panel #addLakeDataRow{display:none!important}
+#lakeDataRows .lake-data-row:not(:first-child){display:none!important}
+#lakeDataRows .lake-data-row button{display:none!important}
+.insitu-shell .status-box{margin:10px 0}.insitu-shell .button{position:relative;cursor:pointer}
+@media(max-width:650px){.insitu-shell{padding:0 2px}.insitu-fields{grid-template-columns:1fr 1fr;gap:9px}.insitu-fields label{font-size:12px}.insitu-fields input,.insitu-fields select{font-size:13px}.insitu-shell .panel{padding:14px}.insitu-metrics{grid-template-columns:repeat(2,1fr)}}
