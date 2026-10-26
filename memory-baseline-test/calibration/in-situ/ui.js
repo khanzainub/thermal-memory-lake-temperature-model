@@ -5,7 +5,7 @@ const STORE="restlake:insitu-calibration:2026-10-26:v1";
 const names=["Ashtamudi","Bhimtal","Bhojtal (Upper)","Bilaspur","Chilika","Dal","Hussain Sagar","Indira Sagar","Khurpatal","Kolleru","Lake Pichola","Loktak","Lonar","Naini","Naukuchiatal","Pangong Tso","Pulicat","Sambhar Salt","Sattal","Tso Moriri","Vembanad","Wular"];
 let db={lakes:{}},lake="",editing=null, pairs=[],run=null;
 try {const found=JSON.parse(localStorage.getItem(STORE)||"{}");if(found&&found.lakes&&typeof found.lakes==="object")db=found;}catch(e){}
-const defaultRecord=()=>({coords:null,draft:[],saved:[],satellite:[],satelliteSource:"",results:null});
+const defaultRecord=()=>({coords:null,draft:[],saved:[],satellite:[],satelliteSource:"",results:null,calibration:null,futureSatellite:[],futureSource:""});
 const data=()=>db.lakes[lake];
 const show=(id,msg,level="neutral")=>{const el=$(id);el.textContent=msg;el.className="status-box status-box--"+level;};
 function persist(){try{localStorage.setItem(STORE,JSON.stringify(db));return true}catch(e){show("obsStatus","Browser storage could not retain all records. Download CSV backups before leaving this page.","warning");return false}}
@@ -54,18 +54,18 @@ function selectLake(){
  let candidate=$("lakeSelect").value;if(candidate==="__other__")candidate=$("otherName").value.trim();
  if(!candidate||candidate.length>80)throw Error("Select or enter one lake name.");
  const coords=validateCoords(false);
- lake=candidate;if(!db.lakes[lake])db.lakes[lake]=defaultRecord();
+ lake=candidate;db.lakes[lake]={...defaultRecord(),...(db.lakes[lake]||{})};
  if(coords)db.lakes[lake].coords=coords;
  fillSelect();$("lakeSelect").value=lake;$("otherWrap").hidden=true;
  const prev=db.lakes[lake].coords;$("lat").value=prev?.lat??"";$("lon").value=prev?.lon??"";
  $("workspace").hidden=false;$("selectedLakeLabel").textContent="Selected: "+lake;
- editing=null;syncDownloadLake();renderObs();renderSatellite();syncDateRange();invalidate();persist();
- if(data().results?.computed){
+ editing=null;syncDownloadLake();renderObs();renderSatellite();syncDateRange();invalidate();
+ if(data().calibration && Number.isFinite(data().calibration.bias_c) && data().results?.computed){
    run=data().results.computed;pairs=data().results.pairs||[];
-   $("maxDays").value=data().results.matching_tolerance_days??3;
+   $("maxDays").value=data().calibration.matching_tolerance_days??3;
    renderPairs();renderMetrics();
-   show("calStatus","Restored the separately saved in-situ correction results for "+lake+".","success");
- }else renderPlot();
+ }
+ refreshSavedValue();refreshFuture();renderPlot();persist();
 }
 $("chooseLake").onclick=()=>{try{selectLake()}catch(e){show("obsStatus",e.message,"danger");alert(e.message)}};
 for(const id of ["lat","lon"])$(id).addEventListener("change",()=>{
@@ -101,8 +101,8 @@ $("insituUpload").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;
  try{if(f.size>5000000)throw Error("Maximum in-situ CSV file is 5 MB.");data().draft=C.inSituCSV(await f.text());editing=null;renderObs();invalidate();show("obsStatus","Uploaded "+data().draft.length+" observations into the draft. Save to retain them.","success")}
  catch(err){show("obsStatus",err.message,"danger")}finally{e.target.value=""}};
 $("saveObs").onclick=()=>{
- try{if(!data().draft.length)throw Error("Add at least one valid observation.");data().saved=C.validateInSitu(data().draft);data().results=null;
- const stored=persist();syncDateRange();renderObs();invalidate();renderPlot();show("obsStatus",stored?"Saved "+data().saved.length+" in-situ observations for "+lake+".":"Saved in this session, but browser storage is full; download a backup.",stored?"success":"warning")}
+ try{if(!data().draft.length)throw Error("Add at least one valid observation.");data().saved=C.validateInSitu(data().draft);data().results=null;data().calibration=null;
+ const stored=persist();syncDateRange();renderObs();invalidate();refreshSavedValue();refreshFuture();renderPlot();show("obsStatus",stored?"Saved "+data().saved.length+" in-situ observations for "+lake+".":"Saved in this session, but browser storage is full; download a backup.",stored?"success":"warning")}
  catch(e){show("obsStatus",e.message,"danger")}};
 $("template").onclick=()=>csvDownload("date,insitu_temp_c\n", "insitu_template.csv");
 $("downloadInsitu").onclick=()=>{if(!data().saved.length){show("obsStatus","Save observations first.","warning");return}
@@ -114,8 +114,8 @@ function renderSatellite(){
 function applySatelliteCSV(csv,source){
  const satellite=C.satelliteCSV(csv);if(satellite.length>10000)throw Error("Satellite file exceeds 10,000 daily records.");
  if(!satellite.some(r=>r.observed_lst_c!==null))throw Error("No valid observed satellite LST values in this CSV.");
- data().satellite=satellite;data().satelliteSource=source;data().results=null;
- persist();renderSatellite();invalidate();renderPlot();show("matchStatus","Loaded "+satellite.filter(r=>r.observed_lst_c!==null).length+" available satellite observations. Now match dates.","success");
+ data().satellite=satellite;data().satelliteSource=source;data().results=null;data().calibration=null;
+ persist();renderSatellite();invalidate();refreshSavedValue();refreshFuture();renderPlot();show("matchStatus","Loaded "+satellite.filter(r=>r.observed_lst_c!==null).length+" available satellite observations. Now match dates.","success");
 }
 $("satUpload").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;
  try{if(f.size>15000000)throw Error("Satellite CSV exceeds 15 MB.");applySatelliteCSV(await f.text(),f.name)}
@@ -144,38 +144,105 @@ function matchDates(){
  show("calStatus","Matches previewed. Click Apply Bias Correction / Calibrate to calculate statistics.","neutral");
 }
 $("matchDates").onclick=()=>{try{matchDates()}catch(e){show("matchStatus",e.message,"danger")}};
-$("maxDays").addEventListener("change",()=>{if(lake){data().results=null;persist();invalidate();renderPlot()}});
+$("maxDays").addEventListener("change",()=>{if(lake){data().results=null;data().calibration=null;persist();invalidate();refreshSavedValue();refreshFuture();renderPlot()}});
 function metric(label,value){const div=document.createElement("div");div.className="metric";const t=document.createElement("span");t.className="metric__label";t.textContent=label;const v=document.createElement("strong");v.className="metric__value";v.textContent=value;div.append(t,v);return div}
 const fmt=v=>Number.isFinite(v)?v.toFixed(3):"—";
 function renderMetrics(){
  const host=$("metrics");host.replaceChildren();
+ if(!run)return;
  const cells=[
-  ["Pairs (train / held out)",run.train.length+" / "+run.held.length],
-  ["Mean additive correction",fmt(run.bias)+" °C"],
-  ["Training RMSE before / after",fmt(run.calibrationBefore.rmse)+" / "+fmt(run.calibrationAfter.rmse)+" °C"],
-  ["Training MAE before / after",fmt(run.calibrationBefore.mae)+" / "+fmt(run.calibrationAfter.mae)+" °C"],
-  ["Held-out RMSE before / after",fmt(run.heldoutBefore.rmse)+" / "+fmt(run.heldoutAfter.rmse)+" °C"],
-  ["Held-out MAE before / after",fmt(run.heldoutBefore.mae)+" / "+fmt(run.heldoutAfter.mae)+" °C"],
-  ["All-pair RMSE before / after",fmt(run.before.rmse)+" / "+fmt(run.after.rmse)+" °C"],
-  ["All-pair MAE before / after",fmt(run.before.mae)+" / "+fmt(run.after.mae)+" °C"]];
- for(const [a,b] of cells)host.append(metric(a,b));
- show("calStatus","Corrected only "+run.corrected.filter(r=>r.observed_lst_c!==null).length+" originally observed satellite values. "+
-   (run.held.length?"Later "+run.held.length+" pairs were not used to estimate bias.":"No independent matched validation pairs: all metrics are in-sample.")+(run.all.length<10?" Small-sample exploratory result: interpret cautiously.":""),
-  run.held.length?"success":"warning");
+ ["Matched historical pairs",String(run.all.length)],
+ ["Reusable calibration bias",fmt(run.bias)+" °C"],
+ ["RMSE before → after",fmt(run.before.rmse)+" → "+fmt(run.after.rmse)+" °C"],
+ ["MAE before → after",fmt(run.before.mae)+" → "+fmt(run.after.mae)+" °C"],
+ ["In-situ calibration period",run.date_start+" to "+run.date_end]];
+ for(const [label,value] of cells)host.append(metric(label,value));
+ show("calStatus","Calculated from "+run.all.length+" matched historical pairs. This is a calibration-fit error, not independent validation. Click Save calibration value to reuse the offset for any later satellite period.","success");
 }
+function refreshSavedValue(){
+ if(!lake)return;
+ const cal=data().calibration;
+ if(!cal||!Number.isFinite(cal.bias_c)){
+   show("savedValue","No saved lake calibration value. Match historical temperatures, calculate the mean bias and save it.","neutral");return;
+ }
+ show("savedValue","SAVED — "+lake+" · Bias: "+fmt(cal.bias_c)+" °C · Calibration dates: "+cal.date_start+" to "+cal.date_end+" · "+cal.pairs_used+" historical pairs. New satellite LST will use this same value.","success");
+}
+function currentFuture(){
+ const d=data(),c=d.calibration;
+ if(!c||!Number.isFinite(c.bias_c))throw Error("First save a calibration value for this lake.");
+ if(!d.futureSatellite?.length)throw Error("Upload a new/or later original satellite CSV.");
+ return C.applySavedBias(d.futureSatellite,c.bias_c);
+}
+function refreshFuture(){
+ if(!lake)return;
+ const future=data().futureSatellite||[],cal=data().calibration;
+ const host=$("futureMetrics");host.replaceChildren();
+ if(!future.length){
+   show("futureStatus",cal?"Saved bias "+fmt(cal.bias_c)+" °C is ready. Upload an original satellite CSV from any later period.":"Save a historical lake calibration before correcting future satellite observations.","neutral");return;
+ }
+ if(!cal||!Number.isFinite(cal.bias_c)){
+   show("futureStatus","A later satellite CSV is present, but the previous calibration has changed. Save a new bias value before correcting it.","warning");return;
+ }
+ const n=future.filter(row=>row.observed_lst_c!==null).length,corrected=currentFuture();
+ for(const [a,b] of [["Input satellite rows",String(future.length)],["LST observations corrected",String(n)],["Saved bias applied",fmt(cal.bias_c)+" °C"],["Data period",future[0].date+" to "+future[future.length-1].date]]){
+   host.append(metric(a,b));
+ }
+ show("futureStatus","AUTO-CORRECTED "+n+" existing satellite LST values using saved "+lake+" bias "+fmt(cal.bias_c)+" °C. Missing LST remains empty. Download this corrected CSV or use it directly in both models.","success");
+}
+
 $("applyBias").onclick=()=>{try{if(!pairs.length)matchDates();run=C.calculate(pairs,data().satellite);renderMetrics();renderPlot()}
  catch(e){show("calStatus",e.message,"danger")}};
 $("saveResults").onclick=()=>{
- if(!run){show("calStatus","Apply correction first.","warning");return}
- data().results={method:"additive_mean_bias",bias_c:run.bias,training_pairs:run.train.length,heldout_pairs:run.held.length,
-  saved_at:new Date().toISOString(),matching_tolerance_days:Number($("maxDays").value),
-  training_rmse_before:run.calibrationBefore.rmse,training_rmse_after:run.calibrationAfter.rmse,
-  training_mae_before:run.calibrationBefore.mae,training_mae_after:run.calibrationAfter.mae,
-  heldout_rmse_before:run.heldoutBefore.rmse,heldout_rmse_after:run.heldoutAfter.rmse,
-  heldout_mae_before:run.heldoutBefore.mae,heldout_mae_after:run.heldoutAfter.mae,
-  computed:run,pairs:pairs};
- const okay=persist();show("calStatus",okay?"Saved correction metrics separately for "+lake+". Models were not changed.":"Browser storage full. Download your outputs as backup.",okay?"success":"warning");
+ if(!run){show("calStatus","Calculate the lake bias first.","warning");return}
+ const d=data();
+ d.calibration={method:"constant_additive_bias",version:2,bias_c:run.bias,pairs_used:run.all.length,
+  date_start:run.date_start,date_end:run.date_end,
+  rmse_before:run.before.rmse,rmse_after:run.after.rmse,
+  mae_before:run.before.mae,mae_after:run.after.mae,
+  matching_tolerance_days:Number($("maxDays").value),saved_at:new Date().toISOString()};
+ d.results={computed:run,pairs};
+ const stored=persist();refreshSavedValue();refreshFuture();show("calStatus",
+ stored?"Lake calibration saved: "+fmt(run.bias)+" °C. All new satellite CSVs for "+lake+" can reuse this value.":"Browser storage is full: download exports and avoid closing the tab.",stored?"success":"warning");
 };
+function loadLaterCSV(text,source){
+ if(!data().calibration||!Number.isFinite(data().calibration.bias_c))throw Error("Save a historical calibration value first.");
+ const rows=C.satelliteCSV(text);
+ if(!rows.length)throw Error("Later satellite CSV contains no rows.");
+ if(rows.length>20000)throw Error("Later dataset exceeds 20,000 records.");
+ if(!rows.some(row=>row.observed_lst_c!==null))throw Error("No observed satellite LST values to correct.");
+ if(/bias.?corrected|calibrated/i.test(source))throw Error("Use the original, uncorrected satellite CSV to avoid applying the bias twice.");
+ data().futureSatellite=rows;data().futureSource=source;
+ const stored=persist();refreshFuture();
+ if(!stored)show("futureStatus","Corrected dataset is available in this session, but browser storage is full. Download it now.","warning");
+}
+$("futureUpload").onchange=async e=>{
+ const file=e.target.files?.[0];if(!file)return;
+ try{
+   if(file.size>15000000)throw Error("Maximum CSV size is 15 MB.");
+   loadLaterCSV(await file.text(),file.name);
+ }catch(err){show("futureStatus",err.message,"danger")}
+ finally{e.target.value=""}
+};
+$("downloadFuture").onclick=()=>{
+ try{
+  const corrected=currentFuture(),stem=safeName();
+  csvDownload(C.modelInputCSV(corrected),stem+"_bias_corrected_satellite_model_input.csv");
+ }catch(e){show("futureStatus",e.message,"danger")}
+};
+$("sendToModels").onclick=async()=>{
+ try{
+  const corrected=currentFuture(),modelCSV=C.modelInputCSV(corrected);
+  const root=window.parent;
+  if(!root||!root.RestCompare||typeof root.RestCompare.loadBoth!=="function")throw Error("Open this tab through the main calibration tool to load data into both models.");
+  const did=await root.RestCompare.loadBoth(modelCSV,safeName()+"_bias_corrected_satellite_model_input.csv","Daily");
+  if(did){
+    show("futureStatus","The SAVED "+lake+" bias was applied and the corrected CSV is now loaded in With Memory and Baseline. Run the models normally.","success");
+    root.document.getElementById("tabMemory")?.click();
+    root.RestCompare.scrollToTabs();
+  }
+ }catch(e){show("futureStatus",e.message,"danger")}
+};
+
 function drawPoint(x,y,fill,title,r=4.3){
  return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+r+'" fill="'+fill+'" stroke="#fff" stroke-width="1.2"><title>'+esc(title)+'</title></circle>';
 }
@@ -213,15 +280,19 @@ function renderPlot(){
 function requireRun(){if(!run)throw Error("Apply the correction first.")}
 function guarded(action){try{action()}catch(e){show("calStatus",e.message,"danger")}}
 $("exportCorrected").onclick=()=>guarded(()=>{requireRun();csvDownload(C.modelInputCSV(run.corrected),safeName()+"_in_situ_corrected_model_input.csv")});
-$("exportAudit").onclick=()=>guarded(()=>{requireRun();csvDownload(C.makeCSV(pairs.map(p=>({...p,role:run.train.some(q=>q.insitu_date===p.insitu_date)?"Calibration":run.held.some(q=>q.insitu_date===p.insitu_date)?"Held-out":"Unmatched",
- corrected_satellite_lst_c:p.satellite_lst_c===null?"":p.satellite_lst_c+run.bias})),
- ["insitu_date","insitu_temp_c","satellite_date","satellite_lst_c","signed_delta_days","delta_days","bias_c","status","role","corrected_satellite_lst_c"]),
- safeName()+"_in_situ_matching_audit.csv")});
-$("exportMetrics").onclick=()=>guarded(()=>{requireRun();const summary=[
- {subset:"Calibration (earlier matched 70%)",n:run.train.length,rmse_before:run.calibrationBefore.rmse,rmse_after:run.calibrationAfter.rmse,mae_before:run.calibrationBefore.mae,mae_after:run.calibrationAfter.mae,bias_c:run.bias},
- {subset:"Chronological held-out (later 30%)",n:run.held.length,rmse_before:run.heldoutBefore.rmse,rmse_after:run.heldoutAfter.rmse,mae_before:run.heldoutBefore.mae,mae_after:run.heldoutAfter.mae,bias_c:run.bias},
- {subset:"All matched pairs (diagnostic only)",n:run.all.length,rmse_before:run.before.rmse,rmse_after:run.after.rmse,mae_before:run.before.mae,mae_after:run.after.mae,bias_c:run.bias}];
- csvDownload(C.makeCSV(summary,["subset","n","rmse_before","rmse_after","mae_before","mae_after","bias_c"]),safeName()+"_in_situ_bias_metrics.csv")});
+$("exportAudit").onclick=()=>guarded(()=>{
+ requireRun();
+ csvDownload(C.makeCSV(pairs.map(p=>({...p,corrected_satellite_lst_c:p.satellite_lst_c===null?"":p.satellite_lst_c+run.bias})),
+ ["insitu_date","insitu_temp_c","satellite_date","satellite_lst_c","signed_delta_days","delta_days","bias_c","status","corrected_satellite_lst_c"]),
+ safeName()+"_historical_matching_audit.csv");
+});
+$("exportMetrics").onclick=()=>guarded(()=>{
+ requireRun();
+ const summary=[{lake,bias_c:run.bias,matched_pairs:run.all.length,calibration_start:run.date_start,calibration_end:run.date_end,
+ rmse_before:run.before.rmse,rmse_after:run.after.rmse,mae_before:run.before.mae,mae_after:run.after.mae}];
+ csvDownload(C.makeCSV(summary,["lake","bias_c","matched_pairs","calibration_start","calibration_end","rmse_before","rmse_after","mae_before","mae_after"]),safeName()+"_calibration_value_metrics.csv");
+});
+
 $("exportPlot").onclick=()=>guarded(()=>{const svg=$("insituPlot");if(!svg)throw Error("No plot to export.");
  csvDownload(new XMLSerializer().serializeToString(svg),safeName()+"_in_situ_calibration_plot.svg","image/svg+xml")});
 $("lakeDataBundle").addEventListener("change",async e=>{
@@ -231,8 +302,14 @@ $("lakeDataBundle").addEventListener("change",async e=>{
  const selected=obj.lakes.find(r=>r.name?.trim().toLowerCase()===lake.toLowerCase());
  if(!selected)throw Error("The imported bundle does not contain the selected lake: "+lake);
  if(typeof selected.csv!=="string"||selected.csv.length>15000000)throw Error("Selected lake CSV is missing or too large.");
- applySatelliteCSV(selected.csv,selected.filename||"Colab: "+lake);
- show("matchStatus","Imported selected lake "+lake+" from Colab bundle. The rest of the bundle was not added.","success")
+ const name=selected.filename||"Colab: "+lake;
+ if(data().calibration){
+   loadLaterCSV(selected.csv,name);
+   show("futureStatus","Imported the new Colab satellite data and automatically applied saved "+lake+" bias. Download corrected CSV or use it in both models.","success");
+ }else{
+   applySatelliteCSV(selected.csv,name);
+   show("matchStatus","Imported historical satellite observations for "+lake+". Now match the saved in-situ temperatures.","success");
+ }
  }catch(e){show("matchStatus",e.message,"danger")}
  },{capture:true});
 $("prepareLakeNotebook").addEventListener("click",e=>{
