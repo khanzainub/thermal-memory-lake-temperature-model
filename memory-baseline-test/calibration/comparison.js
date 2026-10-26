@@ -51,6 +51,9 @@ async function handleFile(frame,file,choice,application=false){
   if(!api)throw Error("The original model has not initialized.");
   if(application)await api.loadApplicationDataset(converted.csv,converted.name);
   else await api.loadTextDataset(converted.csv,converted.name);
+  const result=api.getState();
+  if((application&&!result.applicationRows)||(!application&&!result.rows))
+    throw Error("Original model rejected the corrected CSV; see its input requirements.");
   note(frame,"Saved "+choice.lake+" in-situ bias "+choice.bias.toFixed(3)+" °C was applied to satellite LST. Original observations remain unchanged; the model will use corrected values.",application);
   resize(frame);
  }catch(e){note(frame,"Bias correction failed: "+(e.message||e),application,"danger");}
