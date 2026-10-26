@@ -11,11 +11,14 @@ function persist(){try{localStorage.setItem(STORE,JSON.stringify(db));return tru
 function csvDownload(content,name,type="text/csv;charset=utf-8"){const url=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement("a");a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),20000)}
 function safeName(){return lake.replace(/[^a-z0-9_-]/gi,"_").replace(/_+/g,"_")}
 function maxAvailable(){const d=new Date();d.setDate(d.getDate()-10);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")}
-// Reuse the unchanged satellite CSV import path. No coordinates are required
-// for matching satellite LST to measured in-situ dates.
+// Coordinates are used only for satellite download, never in-situ input.
 function validateCoords(required=false){
- if(required)throw Error("For this calibration, upload an existing satellite LST CSV.");
- return null;
+ const a=$("satelliteLat").value.trim(),b=$("satelliteLon").value.trim();
+ if(!a&&!b){if(required)throw Error("Enter latitude and longitude in Satellite LST download.");return null}
+ const lat=Number(a),lon=Number(b);
+ if(!a||!b||!Number.isFinite(lat)||!Number.isFinite(lon)||lat< -90||lat>90||lon< -180||lon>180)
+  throw Error("Enter valid latitude and longitude for satellite download.");
+ return {lat,lon};
 }
 function syncDownloadLake(){
  const area=$("lakeDataRows");if(!area)return;
@@ -23,8 +26,11 @@ function syncDownloadLake(){
   const last=area.lastElementChild,del=last.querySelector("button");
   if(del)del.click();else last.remove();
  }
- const row=area.firstElementChild;
- if(row)row.querySelector('[name="name"]').value=lake;
+ const row=area.firstElementChild;if(!row)return;
+ row.querySelector('[name="name"]').value=lake;
+ const coord=validateCoords(false);
+ row.querySelector('[name="lat"]').value=coord?.lat??"";
+ row.querySelector('[name="lon"]').value=coord?.lon??"";
 }
 function syncDateRange(){
  if(!lake)return;
@@ -54,6 +60,13 @@ function setActiveWindow(){
  else show("rangeInfo",msg+"The original Colab download controls below are synced to this interval.","success");
 }
 $("windowSelect").addEventListener("change",setActiveWindow);
+for(const id of ["satelliteLat","satelliteLon"]){
+ $(id).addEventListener("change",()=>{
+  if(!lake)return;
+  try{data().coords=validateCoords(false);syncDownloadLake();persist()}
+  catch(e){show("rangeInfo",e.message,"danger")}
+ });
+}
 
 function invalidate(){pairs=[];run=null;$("matches").replaceChildren();$("metrics").replaceChildren();$("graph").replaceChildren();show("matchStatus","Data changed. Match dates again to update the audit.","neutral");show("calStatus","Apply correction after matching dates.","neutral");}
 function selectLake(){
@@ -64,6 +77,8 @@ function selectLake(){
  db.lakes[lake]={...defaultRecord(),...(db.lakes[lake]||{})};
  try{localStorage.setItem("restlake:insitu-active-lake:v1",lake)}catch(e){}
  $("lakeName").value=lake;
+ $("satelliteLat").value=data().coords?.lat??"";
+ $("satelliteLon").value=data().coords?.lon??"";
  $("workspace").hidden=false;
  $("selectedLakeLabel").textContent="Lake: "+lake;
  $("remainingWorkspace").hidden=false;
@@ -242,7 +257,9 @@ $("saveResults").onclick=()=>{
   matching_tolerance_days:Number($("maxDays").value),saved_at:new Date().toISOString()};
  d.results={computed:run,pairs};
  try{localStorage.setItem("restlake:insitu-active-lake:v1",lake)}catch(e){}
- const stored=persist();refreshSavedValue();refreshFuture();show("calStatus",
+ const stored=persist();refreshSavedValue();refreshFuture();
+ try{window.parent.RestCompare?.refreshBiasInfo?.()}catch(e){}
+ show("calStatus",
  stored?"Lake calibration saved: "+fmt(run.bias)+" °C. All new satellite CSVs for "+lake+" can reuse this value.":"Browser storage is full: download exports and avoid closing the tab.",stored?"success":"warning");
 };
 function loadLaterCSV(text,source){
@@ -352,7 +369,8 @@ $("lakeDataBundle").addEventListener("change",async e=>{
  finally{e.target.value="";}
  },{capture:true});
 $("prepareLakeNotebook").addEventListener("click",e=>{
- try{if(!lake)throw Error("Select a lake first.");validateCoords(true);syncDownloadLake();
+ try{if(!lake)throw Error("Select a lake first.");
+ data().coords=validateCoords(true);syncDownloadLake();persist();
  if(!data().saved.length)throw Error("Save in-situ observations before preparing satellite dates.");
  setActiveWindow();
  const w=C.searchWindows(data().saved)[Number($("windowSelect").value||0)];

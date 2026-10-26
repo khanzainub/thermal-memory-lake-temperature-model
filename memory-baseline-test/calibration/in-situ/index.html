@@ -28,16 +28,18 @@
 </section>
 <div id="remainingWorkspace" hidden>
 <section id="downloadArea">
-<div class="panel download-header"><div class="panel__heading"><div><span class="step">03</span><h2>Satellite LST input</h2></div></div>
+<div class="panel download-header"><div class="panel__heading"><div><span class="step">03</span><h2>Download or upload satellite LST</h2></div></div>
 <p class="helper">Measurements can come from <strong>different months and years</strong> (for example, October 2018, April 2019, June 2022 and October 2025). The available in-situ dates automatically create separate ±1-month satellite-search windows; only overlapping windows are combined. Select each search period, download its satellite CSV using the <strong>unchanged Colab workflow</strong> below, and import each result. Intervening years are <strong>not</strong> downloaded unnecessarily.</p>
-<div class="insitu-fields"><label for="windowSelect">Satellite search period (from actual in-situ dates)
-<select id="windowSelect" aria-label="Select observation window"></select></label></div>
+<div class="insitu-fields"><label>Satellite download date range (select each window)
+<select id="windowSelect" aria-label="Select observation window"></select></label>
+<label>Latitude (°) — satellite download only<input id="satelliteLat" type="number" step="any" min="-90" max="90" placeholder="Enter satellite latitude"></label>
+<label>Longitude (°) — satellite download only<input id="satelliteLon" type="number" step="any" min="-180" max="180" placeholder="Enter satellite longitude"></label></div>
 <div id="windowSummary" class="helper">Save dated in-situ observations to populate the available windows.</div>
 <div id="rangeInfo" class="status-box status-box--neutral">The selected date window will populate the original downloader controls below.</div></div>
 <section class="panel lake-data-panel" aria-labelledby="lakeDataTitle">
-        <details id="lakeDataDetails">
-          <summary><span class="step">DATA</span><span id="lakeDataTitle">Get lake data with Google Colab</span></summary>
-          <p class="helper">Enter multiple lakes here. Download a ready-to-run notebook, sign in on Google Colab, run it, and import its result file below. Each lake keeps its own daily CSV in the model's existing format.</p>
+        <details id="lakeDataDetails" open>
+          <summary><span class="step">DATA</span><span id="lakeDataTitle">Download satellite LST with Google Colab</span></summary>
+          <p class="helper">For your selected lake and date window, provide latitude and longitude above, download the original Colab notebook, run it and import the downloaded satellite data below. Repeat for each separate window. The existing satellite algorithm and CSV remain unchanged.</p>
           <div class="notice lake-data-notice">Google sign-in happens on Colab. You must upload the prepared notebook and choose <strong>Runtime → Run all</strong> there; this page does not start a Colab runtime automatically.</div>
           <form id="lakeDataForm">
             <div class="lake-data-dates">
@@ -92,7 +94,7 @@
 <button class="button button--ghost" type="button" id="exportPlot">Download plot SVG</button>
 </div>
 </section>
-<section class="panel">
+<section class="panel" id="advancedFutureArea" hidden>
 <div class="panel__heading"><div><span class="step">06</span><h2>Correct later satellite data using the saved value</h2></div></div>
 <p class="helper">Once you save a lake bias from all available historical matched dates (even scattered across 2018, 2019, 2022 and 2025), upload <strong>any separate satellite model-input CSV</strong> here. The same saved offset will be applied to existing LST values without recalibrating. Download the corrected CSV in the unchanged five-column format or send it to the With-Memory and Baseline tabs.</p>
 <div class="action-row"><label class="button button--primary">Upload new / later satellite CSV<input class="hidden-input" id="futureUpload" type="file" accept=".csv,text/csv"></label>

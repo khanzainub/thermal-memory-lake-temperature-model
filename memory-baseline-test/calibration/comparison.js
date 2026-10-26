@@ -16,19 +16,34 @@ function savedBiases(){
     .map(([lake,d])=>({lake,bias:d.calibration.bias_c}));
  }catch(e){return []}
 }
-function chooseBias(filename) {
- if(alreadyCorrected(filename))return null; // Never apply a stored offset twice.
+function chooseBias(filename,frameIndex) {
+ if(!checkboxes[frameIndex].checked||alreadyCorrected(filename))return null;
  const available=savedBiases();
- if(!available.length)return null;
- const stem=normalize(String(filename).replace(/\.csv$/i,""));
- const named=available.filter(c=>stem===normalize(c.lake)||stem.startsWith(normalize(c.lake)+"_"));
- named.sort((a,b)=>normalize(b.lake).length-normalize(a.lake).length);
- if(named.length)return named[0]; // Explicit lake name in source filename.
+ if(!available.length)throw Error("No saved in-situ bias yet. Calculate and save it in In-Situ Calibration.");
  const selected=localStorage.getItem(ACTIVE);
- const candidate=available.find(c=>c.lake===selected) || (available.length===1?available[0]:null);
- if(candidate && confirm('Apply saved in-situ bias '+candidate.bias.toFixed(3)+' °C for '+candidate.lake+' to this original satellite CSV ("'+filename+'")?'))return candidate;
- return null; // No guessed lake assignment.
+ const record=available.find(x=>x.lake===selected);
+ const stem=normalize(String(filename).replace(/\\.csv$/i,""));
+ const named=available.filter(c=>stem===normalize(c.lake)||stem.startsWith(normalize(c.lake)+"_"))
+  .sort((a,b)=>normalize(b.lake).length-normalize(a.lake).length);
+ const chosen=named[0]||record;
+ if(!chosen)throw Error("Select the correct lake in In-Situ Calibration before applying its saved bias.");
+ if(named.length && record && named[0].lake!==record.lake)
+   throw Error("The uploaded CSV names "+named[0].lake+" but the active calibration belongs to "+record.lake+". Select the right lake.");
+ if(!named.length&&!confirm("Apply saved "+chosen.lake+" bias ("+chosen.bias.toFixed(3)+" °C) to original file '"+filename+"'?"))
+   throw Error("Bias correction was cancelled; uncheck the box to upload without correction.");
+ return chosen;
 }
+function refreshBiasInfo(){
+ const saved=savedBiases(),active=localStorage.getItem(ACTIVE),value=saved.find(x=>x.lake===active);
+ for(let i=0;i<2;i++){
+  const info=$([ "memoryBiasInfo","baselineBiasInfo"][i]);
+  info.textContent=value?
+   "Saved "+value.lake+" bias: "+value.bias.toFixed(3)+" °C. Checked = apply to the NEXT original satellite CSV upload; unchecked = leave unchanged.":
+   "No active saved lake bias. Save a calibration value in the In-Situ Calibration tab first; unchecked leaves satellite data unchanged.";
+ }
+}
+const checkboxes=[$("applyMemoryBias"),$("applyBaselineBias")];
+checkboxes.forEach(c=>c.addEventListener("change",refreshBiasInfo));
 function corrected(text,name,choice){
  if(!choice)return {csv:text,name,applied:null};
  const originals=ReSTInSituCore.satelliteCSV(text);
@@ -62,10 +77,13 @@ function interceptUploads(frame){
  const d=frame.contentDocument;if(!d||!frame.contentWindow.__thermalMemoryApp)return;
  const decide=(file,application,event)=>{
    if(!file)return false;
-   const choice=chooseBias(file.name);
-   if(!choice)return false; // No bias: original uploader operates as before.
+   if(!checkboxes[frames.indexOf(frame)].checked)return false; // OFF: unchanged native uploader.
    event.preventDefault();event.stopImmediatePropagation();
-   void handleFile(frame,file,choice,application);
+   try{
+     const choice=chooseBias(file.name,frames.indexOf(frame));
+     if(!choice){note(frame,"The input is already bias-corrected. Do not apply the offset twice.",application,"warning");return true;}
+     void handleFile(frame,file,choice,application);
+   }catch(e){note(frame,e.message,application,"danger");}
    return true;
  };
  d.addEventListener("change",e=>{
@@ -101,8 +119,8 @@ async function loadBoth(csv,name,frequency="Daily"){
  await Promise.all([...ready.values()]);
  if(frames.some(f=>f.contentWindow.__thermalMemoryApp?.getState().fit)&&
    !confirm("Replace an existing fitted dataset in both models?"))return false;
- const chosen=chooseBias(name),input=corrected(csv,name,chosen);
  for(const frame of frames){
+  const frameIndex=frames.indexOf(frame),chosen=chooseBias(name,frameIndex),input=corrected(csv,name,chosen);
   const win=frame.contentWindow,radio=win.document.querySelector('input[name="frequency"][value="'+frequency+'"]');
   if(!radio)throw Error("Missing "+frequency+" mode in the original model.");
   radio.checked=true;radio.dispatchEvent(new win.Event("change",{bubbles:true}));
@@ -111,7 +129,7 @@ async function loadBoth(csv,name,frequency="Daily"){
   if(chosen)note(frame, "Saved "+chosen.lake+" bias ("+chosen.bias.toFixed(3)+" °C) applied to existing satellite LST observations.");
   resize(frame);
  }
- if(chosen)$("modeNote").textContent="Saved "+chosen.lake+" in-situ correction of "+chosen.bias.toFixed(3)+" °C was applied to model input. Both model equations are unchanged.";
+ refreshBiasInfo();
  return true;
 }
 function activate(mode){
@@ -119,10 +137,12 @@ function activate(mode){
  $("memoryPane").hidden=!memory;$("baselinePane").hidden=memory;
  $("tabMemory").classList.toggle("cmp-active",memory);$("tabBaseline").classList.toggle("cmp-active",!memory);
  $("tabMemory").setAttribute("aria-selected",String(memory));$("tabBaseline").setAttribute("aria-selected",String(!memory));
+ refreshBiasInfo();
  $("modeNote").textContent=memory?"Unchanged With-Memory ReST-Lake model. Its existing CSV upload is below.":"Unchanged Zero-Memory Baseline (M = 0). Its existing CSV upload is below.";
  resize(memory?frames[0]:frames[1]);
 }
 $("tabMemory").onclick=()=>activate("memory");
 $("tabBaseline").onclick=()=>activate("baseline");
-return {loadBoth,activate,scrollToTabs:()=>$("compareModels").scrollIntoView({behavior:"smooth"})};
+refreshBiasInfo();
+return {loadBoth,activate,refreshBiasInfo,scrollToTabs:()=>$("compareModels").scrollIntoView({behavior:"smooth"})};
 })();

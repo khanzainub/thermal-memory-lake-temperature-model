@@ -23,5 +23,16 @@
 
 /* Calibration uses any lake name, observation dates and temperatures; no coordinates. */
 .lake-name-only{grid-template-columns:minmax(0,420px)}
-#downloadArea{display:none!important}
+
 @media(max-width:650px){.lake-name-only{grid-template-columns:minmax(0,1fr)}}
+
+/* Coordinates belong only inside satellite acquisition. The original
+   downloader still receives the required coordinates internally. */
+#downloadArea{display:block}
+#lakeDataRows .lake-data-row label:has(input[name="lat"]),
+#lakeDataRows .lake-data-row label:has(input[name="lon"]),
+#lakeDataRows .lake-data-row label:has(input[name="name"]){display:none!important}
+#lakeDataForm .subpanel{display:none!important}
+#advancedFutureArea{display:none!important}
+.insitu-shell .table-wrap:has(#observations){max-height:280px;overflow-y:auto}
+@media(max-width:650px){#downloadArea .insitu-fields{grid-template-columns:1fr}}
