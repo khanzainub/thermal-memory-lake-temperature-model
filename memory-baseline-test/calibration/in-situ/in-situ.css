@@ -85,3 +85,6 @@
 #downloadArea #lakeDataRows{display:none!important}
 #downloadArea .lake-data-import,#downloadArea #lakeDataResults{display:none!important}
 #downloadArea #addLakeDataRow{display:none!important}
+
+/* In-situ Colab download is always Daily; do not show irrelevant frequencies. */
+#lakeDataForm > [role="tablist"]{display:none!important}
