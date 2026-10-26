@@ -11,7 +11,7 @@ insitu.addEventListener("click",()=>{
  originals.forEach(b=>{b.classList.remove("cmp-active");b.setAttribute("aria-selected","false")});
  oldPanes.forEach(p=>p.hidden=true);
  pane.hidden=false;insitu.classList.add("cmp-active");insitu.setAttribute("aria-selected","true");
- $("modeNote").textContent="Independent field-temperature calibration. Does not change either model's inputs, equations, fitted parameters or results.";
+ $("modeNote").textContent="Satellite LST bias calibration: match old in-situ temperatures once, save a correction value, and reuse it for later satellite data. Model equations remain unchanged.";
  resize();
 });
 frame.addEventListener("load",()=>{
