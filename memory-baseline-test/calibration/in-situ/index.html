@@ -66,7 +66,7 @@
 </section>
 <section class="panel">
 <div class="panel__heading"><div><span class="step">04</span><h2>Match historical satellite and in-situ dates</h2></div></div>
-<p class="helper">Import the downloaded <code>lake_data_results.json</code> using the original control above, or import a single original five-column lake CSV. Only observed satellite temperatures are matched; absent observations are kept missing.</p>
+<p class="helper">Import the downloaded <code>lake_data_results.json</code> using the original control above, or import a single original five-column lake CSV. Before calibration, use this input to match historical observations. After saving a lake bias, any subsequent original CSV uploaded here will automatically receive the saved correction instead of overwriting it. Missing satellite values remain missing.</p>
 <div class="action-row">
 <label class="button button--secondary">Upload satellite model-input CSV<input id="satUpload" class="hidden-input" type="file" accept=".csv,text/csv"></label>
 <button id="downloadSatellite" class="button button--ghost" type="button">Download retained original satellite CSV</button>
