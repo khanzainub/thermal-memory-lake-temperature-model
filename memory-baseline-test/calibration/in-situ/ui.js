@@ -1,6 +1,8 @@
 "use strict";
 (()=>{
 const C=ReSTInSituCore, $=id=>document.getElementById(id);
+// Expand the optional satellite downloader when users follow the upload-card shortcut.
+document.querySelector(".calibration-download-link")?.addEventListener("click",()=>{$("downloadArea").open=true;});
 const STORE="restlake:insitu-calibration:2026-10-26:v1";
 let db={lakes:{}},lake="",editing=null, pairs=[],run=null;
 try {const found=JSON.parse(localStorage.getItem(STORE)||"{}");if(found&&found.lakes&&typeof found.lakes==="object")db=found;}catch(e){}
