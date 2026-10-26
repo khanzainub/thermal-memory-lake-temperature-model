@@ -60,6 +60,12 @@ function selectLake(){
  const prev=db.lakes[lake].coords;$("lat").value=prev?.lat??"";$("lon").value=prev?.lon??"";
  $("workspace").hidden=false;$("selectedLakeLabel").textContent="Selected: "+lake;
  editing=null;syncDownloadLake();renderObs();renderSatellite();syncDateRange();invalidate();persist();
+ if(data().results?.computed){
+   run=data().results.computed;pairs=data().results.pairs||[];
+   $("maxDays").value=data().results.matching_tolerance_days??3;
+   renderPairs();renderMetrics();
+   show("calStatus","Restored the separately saved in-situ correction results for "+lake+".","success");
+ }else renderPlot();
 }
 $("chooseLake").onclick=()=>{try{selectLake()}catch(e){show("obsStatus",e.message,"danger");alert(e.message)}};
 for(const id of ["lat","lon"])$(id).addEventListener("change",()=>{
@@ -96,7 +102,7 @@ $("insituUpload").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;
  catch(err){show("obsStatus",err.message,"danger")}finally{e.target.value=""}};
 $("saveObs").onclick=()=>{
  try{if(!data().draft.length)throw Error("Add at least one valid observation.");data().saved=C.validateInSitu(data().draft);data().results=null;
- const stored=persist();syncDateRange();renderObs();invalidate();show("obsStatus",stored?"Saved "+data().saved.length+" in-situ observations for "+lake+".":"Saved in this session, but browser storage is full; download a backup.",stored?"success":"warning")}
+ const stored=persist();syncDateRange();renderObs();invalidate();renderPlot();show("obsStatus",stored?"Saved "+data().saved.length+" in-situ observations for "+lake+".":"Saved in this session, but browser storage is full; download a backup.",stored?"success":"warning")}
  catch(e){show("obsStatus",e.message,"danger")}};
 $("template").onclick=()=>csvDownload("date,insitu_temp_c\n", "insitu_template.csv");
 $("downloadInsitu").onclick=()=>{if(!data().saved.length){show("obsStatus","Save observations first.","warning");return}
@@ -109,7 +115,7 @@ function applySatelliteCSV(csv,source){
  const satellite=C.satelliteCSV(csv);if(satellite.length>10000)throw Error("Satellite file exceeds 10,000 daily records.");
  if(!satellite.some(r=>r.observed_lst_c!==null))throw Error("No valid observed satellite LST values in this CSV.");
  data().satellite=satellite;data().satelliteSource=source;data().results=null;
- persist();renderSatellite();invalidate();show("matchStatus","Loaded "+satellite.filter(r=>r.observed_lst_c!==null).length+" available satellite observations. Now match dates.","success");
+ persist();renderSatellite();invalidate();renderPlot();show("matchStatus","Loaded "+satellite.filter(r=>r.observed_lst_c!==null).length+" available satellite observations. Now match dates.","success");
 }
 $("satUpload").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;
  try{if(f.size>15000000)throw Error("Satellite CSV exceeds 15 MB.");applySatelliteCSV(await f.text(),f.name)}
@@ -138,7 +144,7 @@ function matchDates(){
  show("calStatus","Matches previewed. Click Apply Bias Correction / Calibrate to calculate statistics.","neutral");
 }
 $("matchDates").onclick=()=>{try{matchDates()}catch(e){show("matchStatus",e.message,"danger")}};
-$("maxDays").addEventListener("change",()=>{if(lake)invalidate()});
+$("maxDays").addEventListener("change",()=>{if(lake){data().results=null;persist();invalidate();renderPlot()}});
 function metric(label,value){const div=document.createElement("div");div.className="metric";const t=document.createElement("span");t.className="metric__label";t.textContent=label;const v=document.createElement("strong");v.className="metric__value";v.textContent=value;div.append(t,v);return div}
 const fmt=v=>Number.isFinite(v)?v.toFixed(3):"—";
 function renderMetrics(){
@@ -166,7 +172,8 @@ $("saveResults").onclick=()=>{
   training_rmse_before:run.calibrationBefore.rmse,training_rmse_after:run.calibrationAfter.rmse,
   training_mae_before:run.calibrationBefore.mae,training_mae_after:run.calibrationAfter.mae,
   heldout_rmse_before:run.heldoutBefore.rmse,heldout_rmse_after:run.heldoutAfter.rmse,
-  heldout_mae_before:run.heldoutBefore.mae,heldout_mae_after:run.heldoutAfter.mae};
+  heldout_mae_before:run.heldoutBefore.mae,heldout_mae_after:run.heldoutAfter.mae,
+  computed:run,pairs:pairs};
  const okay=persist();show("calStatus",okay?"Saved correction metrics separately for "+lake+". Models were not changed.":"Browser storage full. Download your outputs as backup.",okay?"success":"warning");
 };
 function drawPoint(x,y,fill,title,r=4.3){
@@ -234,5 +241,4 @@ $("prepareLakeNotebook").addEventListener("click",e=>{
  const span=C.span(data().saved);if(span.start>maxAvailable())throw Error("Selected dates are later than the satellite provider's available range.");
  }catch(err){e.preventDefault();e.stopImmediatePropagation();show("rangeInfo",err.message,"danger")}
  },{capture:true});
-renderPlot=renderPlot.bind(null);
 })();
