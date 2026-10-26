@@ -2,6 +2,14 @@
 
 This is one additional calibration tab within the cloned `memory-baseline-test/calibration/` application. It is **not** a third lake-temperature model. Neither existing With-Memory nor Zero-Memory solver was changed.
 
+## Irregular historical observation dates and multiple download periods
+
+In-situ observations can be sporadic and span nonconsecutive months or years (for example, October 2018; May 2019; November 2022; March 2025). Upload the two-column data in one CSV or cumulatively across separate CSVs, or enter individual dates manually.
+
+For every actual in-situ observation the calibration tab defines a satellite-search window of **one calendar month before and after its date**. Only overlapping/adjacent windows are merged. The date-window selector synchronizes the existing Colab download controls to each window in turn, without retrieving unnecessary intervening years. Download each available window and import its original Colab JSON or five-column CSV. Imports are merged by observation date; previously imported periods remain available. An existing date is not replaced by a different non-null LST value (conflicts are reported). A satellite date with no observation stays null.
+
+Once all available periods are imported, match the complete set of in-situ dates (exact first, nearest subject to chosen tolerance) and calculate one mean offset from every matched genuine observation, **regardless of year**. Missing years and unmatched dates do not become fabricated calibration pairs. The saved offset can subsequently be applied to separate original satellite CSVs for other dates/years.
+
 ## Intended workflow
 1. Select a lake. Enter measured water temperatures by date manually or upload `date,insitu_temp_c`.
 2. Download historical satellite data around the in-situ period with the exact original Google Colab pipeline, or upload an original five-column ReST-Lake satellite CSV.
