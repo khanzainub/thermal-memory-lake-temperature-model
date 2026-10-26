@@ -160,7 +160,7 @@ function renderMetrics(){
   ["All-pair MAE before / after",fmt(run.before.mae)+" / "+fmt(run.after.mae)+" °C"]];
  for(const [a,b] of cells)host.append(metric(a,b));
  show("calStatus","Corrected only "+run.corrected.filter(r=>r.observed_lst_c!==null).length+" originally observed satellite values. "+
-   (run.held.length?"Later "+run.held.length+" pairs were not used to estimate bias.":"No independent matched validation pairs: all metrics are in-sample."),
+   (run.held.length?"Later "+run.held.length+" pairs were not used to estimate bias.":"No independent matched validation pairs: all metrics are in-sample.")+(run.all.length<10?" Small-sample exploratory result: interpret cautiously.":""),
   run.held.length?"success":"warning");
 }
 $("applyBias").onclick=()=>{try{if(!pairs.length)matchDates();run=C.calculate(pairs,data().satellite);renderMetrics();renderPlot()}
@@ -213,7 +213,7 @@ function renderPlot(){
 function requireRun(){if(!run)throw Error("Apply the correction first.")}
 function guarded(action){try{action()}catch(e){show("calStatus",e.message,"danger")}}
 $("exportCorrected").onclick=()=>guarded(()=>{requireRun();csvDownload(C.modelInputCSV(run.corrected),safeName()+"_in_situ_corrected_model_input.csv")});
-$("exportAudit").onclick=()=>guarded(()=>{requireRun();csvDownload(C.makeCSV(pairs.map(p=>({...p,role:run.train.includes(p)?"Calibration":run.held.includes(p)?"Held-out":"Unmatched",
+$("exportAudit").onclick=()=>guarded(()=>{requireRun();csvDownload(C.makeCSV(pairs.map(p=>({...p,role:run.train.some(q=>q.insitu_date===p.insitu_date)?"Calibration":run.held.some(q=>q.insitu_date===p.insitu_date)?"Held-out":"Unmatched",
  corrected_satellite_lst_c:p.satellite_lst_c===null?"":p.satellite_lst_c+run.bias})),
  ["insitu_date","insitu_temp_c","satellite_date","satellite_lst_c","signed_delta_days","delta_days","bias_c","status","role","corrected_satellite_lst_c"]),
  safeName()+"_in_situ_matching_audit.csv")});
