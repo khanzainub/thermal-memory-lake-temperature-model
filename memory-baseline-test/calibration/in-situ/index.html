@@ -17,7 +17,7 @@
 <div id="workspace" hidden>
 <section class="panel">
 <div class="panel__heading"><div><span class="step">02</span><h2>In-situ observations</h2></div></div>
-<p class="helper">Enter observed temperatures in °C for arbitrary valid dates. CSV must contain exactly <code>date,insitu_temp_c</code>. You can add, edit, delete, save and export observations without changing either model.</p>
+<p class="helper">Add measured temperatures for <strong>any dates across multiple years</strong>, even with long gaps. CSV must contain exactly <code>date,insitu_temp_c</code>. Multiple CSV uploads add observations to the same lake, without deleting prior dates. Edit or delete individual rows as needed.</p>
 <div class="action-row"><label class="button button--secondary">Upload in-situ CSV<input id="insituUpload" class="hidden-input" type="file" accept=".csv,text/csv"></label>
 <button class="button button--ghost" type="button" id="template">Download CSV template</button>
 <button class="button button--ghost" type="button" id="downloadInsitu">Download saved observations</button></div>
@@ -33,8 +33,11 @@
 </section>
 <section id="downloadArea">
 <div class="panel download-header"><div class="panel__heading"><div><span class="step">03</span><h2>Satellite LST download · ±1 month</h2></div></div>
-<p class="helper">The existing Google Colab downloader appears directly below, with its original lake-data controls, Landsat 8/9 pipeline and five-column CSV format. The requested period is automatically set to one month before the first in-situ date and one month after the last in-situ date. Google sign-in happens only on the Colab website.</p>
-<div id="rangeInfo" class="status-box status-box--neutral">Save dated in-situ observations to synchronize the satellite search window.</div></div>
+<p class="helper">Measurements can come from <strong>different months and years</strong> (for example, October 2018, April 2019, June 2022 and October 2025). The available in-situ dates automatically create separate ±1-month satellite-search windows; only overlapping windows are combined. Select each search period, download its satellite CSV using the <strong>unchanged Colab workflow</strong> below, and import each result. Intervening years are <strong>not</strong> downloaded unnecessarily.</p>
+<div class="insitu-fields"><label for="windowSelect">Satellite search period (from actual in-situ dates)
+<select id="windowSelect" aria-label="Select observation window"></select></label></div>
+<div id="windowSummary" class="helper">Save dated in-situ observations to populate the available windows.</div>
+<div id="rangeInfo" class="status-box status-box--neutral">The selected date window will populate the original downloader controls below.</div></div>
 <section class="panel lake-data-panel" aria-labelledby="lakeDataTitle">
         <details id="lakeDataDetails">
           <summary><span class="step">DATA</span><span id="lakeDataTitle">Get lake data with Google Colab</span></summary>
@@ -66,9 +69,9 @@
 </section>
 <section class="panel">
 <div class="panel__heading"><div><span class="step">04</span><h2>Match historical satellite and in-situ dates</h2></div></div>
-<p class="helper">Import the downloaded <code>lake_data_results.json</code> using the original control above, or import a single original five-column lake CSV. Before calibration, use this input to match historical observations. After saving a lake bias, any subsequent original CSV uploaded here will automatically receive the saved correction instead of overwriting it. Missing satellite values remain missing.</p>
+<p class="helper">Import the original five-column satellite CSVs for <strong>each available historical period</strong>, whether from 2018, 2019, 2022 or 2025. You can upload them separately or import each Colab JSON result above. Their dates are <strong>merged without replacing existing historical records</strong>; overlapping duplicates are checked. Missing satellite dates remain missing. Once all periods are loaded, click Match observation dates.</p>
 <div class="action-row">
-<label class="button button--secondary">Upload satellite model-input CSV<input id="satUpload" class="hidden-input" type="file" accept=".csv,text/csv"></label>
+<label class="button button--secondary">Add historical satellite CSV<input id="satUpload" class="hidden-input" type="file" accept=".csv,text/csv"></label>
 <button id="downloadSatellite" class="button button--ghost" type="button">Download retained original satellite CSV</button>
 <span id="satCount" class="file-name">No satellite observations loaded</span></div>
 <div class="insitu-fields"><label>Maximum nearest-date difference (days)<input id="maxDays" type="number" min="0" max="365" step="1" value="3"></label></div>
@@ -79,7 +82,7 @@
 </section>
 <section class="panel">
 <div class="panel__heading"><div><span class="step">05</span><h2>Calculate and save lake calibration value</h2></div></div>
-<p class="helper"><strong>One reusable value per lake:</strong> Mean bias = average of (in-situ temperature − satellite LST) across all matched historical observations. A value estimated from 2018 can be saved and applied to later years without recalculating it, assuming the sensor and systematic bias remain stable. <code>Corrected satellite LST = original satellite LST + saved bias (°C)</code>. No missing dates are filled. Different measurement dates can represent actual temperature change.</p>
+<p class="helper"><strong>One reusable value per lake:</strong> Combine all available genuine in-situ/satellite matched dates, including observations in different years, and calculate <code>bias = mean(in-situ temperature − satellite LST)</code>. Save this single lake-specific offset and reuse it for any other satellite period, provided the systematic bias is reasonably stable. <code>Corrected satellite LST = original satellite LST + saved bias (°C)</code>. No observations are fabricated or interpolated.</p>
 <div class="action-row"><button type="button" id="applyBias" class="button button--primary">Calculate lake bias</button>
 <button type="button" id="saveResults" class="button button--secondary">Save calibration value</button></div>
 <div id="metrics" class="insitu-metrics"></div><div id="savedValue" class="status-box status-box--neutral">No saved calibration value yet.</div><div class="status-box status-box--neutral" id="calStatus">Match historical dates to calculate the bias value.</div>
@@ -95,7 +98,7 @@
 </section>
 <section class="panel">
 <div class="panel__heading"><div><span class="step">06</span><h2>Correct later satellite data using the saved value</h2></div></div>
-<p class="helper">For example, calculate the bias from matched observations in October 2018, then upload satellite observations from 2019, 2020 or later. The same stored additive offset will be applied to every <em>existing</em> satellite LST value. The five-column model-input CSV format is retained. No new in-situ measurements or recalibration are required.</p>
+<p class="helper">Once you save a lake bias from all available historical matched dates (even scattered across 2018, 2019, 2022 and 2025), upload <strong>any separate satellite model-input CSV</strong> here. The same saved offset will be applied to existing LST values without recalibrating. Download the corrected CSV in the unchanged five-column format or send it to the With-Memory and Baseline tabs.</p>
 <div class="action-row"><label class="button button--primary">Upload new / later satellite CSV<input class="hidden-input" id="futureUpload" type="file" accept=".csv,text/csv"></label>
 <button type="button" id="downloadFuture" class="button button--secondary">Download calibrated satellite CSV</button>
 <button type="button" id="sendToModels" class="button button--secondary">Use calibrated CSV in With Memory &amp; Baseline</button></div>
