@@ -13,6 +13,29 @@ window.RestCompare=(()=>{
   if(!["Daily","Monthly","Yearly"].includes(frequency))throw Error("Unsupported temporal resolution");
   await Promise.all([...ready.values()]);
   if(frames.some(f=>f.contentWindow.__thermalMemoryApp.getState().fit)&&!confirm("Replace the dataset and clear fitted results in both models?"))return false;
+  // A previously saved historical in-situ bias may be applied automatically
+  // when the selected lake can be unambiguously identified from an ORIGINAL CSV filename.
+  // Corrected files are explicitly excluded to prevent double correction.
+  let biasNote="";
+  try{
+    if(!/corrected|calibrated/i.test(name)){
+      const stored=JSON.parse(localStorage.getItem("restlake:insitu-calibration:2026-10-26:v1")||"{}");
+      const normalize=x=>String(x).toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"");
+      const source=normalize(name);
+      const eligible=Object.entries(stored.lakes||{}).filter(([lake,data])=>{
+        const slug=normalize(lake);
+        return slug && (source===slug||source.startsWith(slug+"_")) &&
+          Number.isFinite(data?.calibration?.bias_c) && data.calibration.version===2;
+      }).sort((a,b)=>b[0].length-a[0].length);
+      if(eligible.length&&frequency==="Daily"){
+        const [selected,record]=eligible[0],originalCSV=ReSTInSituCore.satelliteCSV(csv);
+        if(!originalCSV.length)throw Error("Cannot apply saved lake calibration to an empty satellite CSV.");
+        csv=ReSTInSituCore.modelInputCSV(ReSTInSituCore.applySavedBias(originalCSV,record.calibration.bias_c));
+        biasNote=" Saved "+selected+" in-situ bias ("+record.calibration.bias_c.toFixed(3)+" °C) automatically applied to satellite LST before model input.";
+        name=name.replace(/\.csv$/i,"")+"_bias_corrected.csv";
+      }
+    }
+  }catch(e){throw Error("Saved in-situ bias could not be applied safely: "+e.message)}
   for(const frame of frames){
    const w=frame.contentWindow,radio=w.document.querySelector('input[name="frequency"][value="'+frequency+'"]');
    if(!radio)throw Error("Missing temporal mode");radio.checked=true;radio.dispatchEvent(new w.Event("change",{bubbles:true}));
@@ -21,7 +44,7 @@ window.RestCompare=(()=>{
    resize(frame);
   }
   $("sharedFile").textContent=name+" · "+frequency;
-  status("Same "+frequency.toLowerCase()+" CSV loaded in both tabs. Run calibration and independent validation in each tab.","success");
+  status("Same "+frequency.toLowerCase()+" CSV loaded in both tabs."+biasNote+" Run calibration and independent validation in each tab.","success");
   return true;
  }
  function activate(mode){
