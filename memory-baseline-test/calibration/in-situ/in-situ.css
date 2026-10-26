@@ -60,3 +60,20 @@
 #downloadArea>.panel{margin:10px 12px!important}
 #downloadArea .download-header{border:0;box-shadow:none}
 @media(max-width:650px){#downloadArea>.calibration-download-summary{font-size:14px;padding:12px}#downloadArea>.panel{margin:8px!important}}
+
+/* Clean calibration-only experience; keep existing downloader and scientific functions. */
+#downloadArea .lake-data-dates{display:none!important}
+#lakeDataResults{display:none!important}
+#downloadArea .lake-data-panel{padding:8px 12px!important}
+#downloadArea .lake-data-panel .action-row{gap:8px}
+#downloadArea .download-header{padding:10px 12px 0!important;margin:0!important}
+#downloadArea>.calibration-download-summary{min-height:40px}
+#matches tr{cursor:pointer;transition:background-color .12s}
+#matches tr.is-selected{background:#d9ebfa!important;outline:2px solid #327ab0;outline-offset:-2px}
+#matches tr:focus-visible{outline:2px solid #327ab0;outline-offset:-2px}
+#matches button{padding:5px 10px;font-size:12px}
+#matches input[type=number]{width:90px;max-width:100%;padding:5px;border:1px solid #6c9dbc;border-radius:6px;background:#fff;color:#234;box-sizing:border-box}
+#insituPlot circle[data-obs-date]{cursor:pointer;outline:none}
+#insituPlot circle.is-selected{stroke:#17314c!important;stroke-width:3!important}
+#insituPlot circle[data-obs-date]:focus-visible{stroke:#17314c;stroke-width:3}
+@media(max-width:650px){#downloadArea .lake-data-panel .action-row{display:flex;flex-wrap:wrap}#matches input[type=number]{width:74px}}
