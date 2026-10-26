@@ -20,3 +20,8 @@
 #chooseLakeHint{margin:8px 0 14px}
 #remainingWorkspace[hidden]{display:none!important}
 .insitu-shell input:disabled,.insitu-shell button:disabled{opacity:.55;cursor:not-allowed}
+
+/* Calibration uses any lake name, observation dates and temperatures; no coordinates. */
+.lake-name-only{grid-template-columns:minmax(0,420px)}
+#downloadArea{display:none!important}
+@media(max-width:650px){.lake-name-only{grid-template-columns:minmax(0,1fr)}}

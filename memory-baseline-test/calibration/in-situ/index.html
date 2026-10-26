@@ -5,19 +5,14 @@
 <body><main class="insitu-shell">
 <section class="panel">
 <div class="panel__heading"><div><span class="step">01</span><h2>Select lake</h2></div></div>
-<p class="helper">Choose a lake before adding field temperatures. Each lake gets one saved calibration offset (°C). Apply that same offset to later satellite observations.</p>
-<div class="insitu-fields">
-<label>Lake<select id="lakeSelect"><option value="">Select a lake…</option></select></label>
-<label id="otherWrap" hidden>Custom lake name<input id="otherName" type="text" maxlength="80" placeholder="Enter lake name"></label>
-<label>Latitude (°) — required for satellite download<input id="lat" type="number" min="-90" max="90" step="any" placeholder="Enter lake latitude"></label>
-<label>Longitude (°) — required for satellite download<input id="lon" type="number" min="-180" max="180" step="any" placeholder="Enter lake longitude"></label>
-</div>
-<div class="action-row"><button class="button button--primary" type="button" id="chooseLake">Use selected lake</button><span id="selectedLakeLabel" class="file-name"></span></div>
+<p class="helper">Enter a lake name and upload measured temperatures or add individual dates. No coordinates or fixed lake list.</p>
+<div class="insitu-fields lake-name-only"><label>Lake name<input id="lakeName" type="text" maxlength="80" autocomplete="off" placeholder="Enter any lake name"></label></div>
+<div class="action-row"><button class="button button--primary" type="button" id="chooseLake">Use this lake</button><span id="selectedLakeLabel" class="file-name"></span></div>
 </section>
 <div id="workspace">
 <section class="panel">
 <div class="panel__heading"><div><span class="step">02</span><h2>Upload In-Situ CSV or enter observations</h2></div></div>
-<p id="chooseLakeHint" class="status-box status-box--neutral">First choose a lake above, then upload your In-Situ CSV or enter date and temperature values.</p><p class="helper">Add measured temperatures for <strong>any dates across multiple years</strong>, even with long gaps. CSV must contain exactly <code>date,insitu_temp_c</code>. Multiple CSV uploads add observations to the same lake, without deleting prior dates. Edit or delete individual rows as needed.</p>
+<p id="chooseLakeHint" class="status-box status-box--neutral">Enter a lake name above, then upload a CSV or add observation dates and temperatures.</p><p class="helper">Add measured temperatures for <strong>any dates across multiple years</strong>, even with long gaps. CSV must contain exactly <code>date,insitu_temp_c</code>. Multiple CSV uploads add observations to the same lake, without deleting prior dates. Edit or delete individual rows as needed.</p>
 <div class="action-row"><label class="button button--primary" id="inSituUploadLabel">Upload In-Situ CSV (date,insitu_temp_c)<input id="insituUpload" class="hidden-input" type="file" accept=".csv,text/csv" disabled></label>
 <button class="button button--ghost" type="button" id="template">Download CSV template</button>
 <button class="button button--ghost" type="button" id="downloadInsitu" disabled>Download saved observations</button></div>
@@ -33,7 +28,7 @@
 </section>
 <div id="remainingWorkspace" hidden>
 <section id="downloadArea">
-<div class="panel download-header"><div class="panel__heading"><div><span class="step">03</span><h2>Satellite LST download · ±1 month</h2></div></div>
+<div class="panel download-header"><div class="panel__heading"><div><span class="step">03</span><h2>Satellite LST input</h2></div></div>
 <p class="helper">Measurements can come from <strong>different months and years</strong> (for example, October 2018, April 2019, June 2022 and October 2025). The available in-situ dates automatically create separate ±1-month satellite-search windows; only overlapping windows are combined. Select each search period, download its satellite CSV using the <strong>unchanged Colab workflow</strong> below, and import each result. Intervening years are <strong>not</strong> downloaded unnecessarily.</p>
 <div class="insitu-fields"><label for="windowSelect">Satellite search period (from actual in-situ dates)
 <select id="windowSelect" aria-label="Select observation window"></select></label></div>
@@ -72,7 +67,7 @@
 <div class="panel__heading"><div><span class="step">04</span><h2>Match historical satellite and in-situ dates</h2></div></div>
 <p class="helper">Import the original five-column satellite CSVs for <strong>each available historical period</strong>, whether from 2018, 2019, 2022 or 2025. You can upload them separately or import each Colab JSON result above. Their dates are <strong>merged without replacing existing historical records</strong>; overlapping duplicates are checked. Missing satellite dates remain missing. Once all periods are loaded, click Match observation dates.</p>
 <div class="action-row">
-<label class="button button--secondary">Add historical satellite CSV<input id="satUpload" class="hidden-input" type="file" accept=".csv,text/csv"></label>
+<label class="button button--secondary">Upload satellite LST CSV<input id="satUpload" class="hidden-input" type="file" accept=".csv,text/csv"></label>
 <button id="downloadSatellite" class="button button--ghost" type="button">Download retained original satellite CSV</button>
 <span id="satCount" class="file-name">No satellite observations loaded</span></div>
 <div class="insitu-fields"><label>Maximum nearest-date difference (days)<input id="maxDays" type="number" min="0" max="365" step="1" value="3"></label></div>

@@ -2,7 +2,6 @@
 (()=>{
 const C=ReSTInSituCore, $=id=>document.getElementById(id);
 const STORE="restlake:insitu-calibration:2026-10-26:v1";
-const names=["Ashtamudi","Bhimtal","Bhojtal (Upper)","Bilaspur","Chilika","Dal","Hussain Sagar","Indira Sagar","Khurpatal","Kolleru","Lake Pichola","Loktak","Lonar","Naini","Naukuchiatal","Pangong Tso","Pulicat","Sambhar Salt","Sattal","Tso Moriri","Vembanad","Wular"];
 let db={lakes:{}},lake="",editing=null, pairs=[],run=null;
 try {const found=JSON.parse(localStorage.getItem(STORE)||"{}");if(found&&found.lakes&&typeof found.lakes==="object")db=found;}catch(e){}
 const defaultRecord=()=>({coords:null,draft:[],saved:[],satellite:[],satelliteSource:"",results:null,calibration:null,futureSatellite:[],futureSource:""});
@@ -12,30 +11,20 @@ function persist(){try{localStorage.setItem(STORE,JSON.stringify(db));return tru
 function csvDownload(content,name,type="text/csv;charset=utf-8"){const url=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement("a");a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),20000)}
 function safeName(){return lake.replace(/[^a-z0-9_-]/gi,"_").replace(/_+/g,"_")}
 function maxAvailable(){const d=new Date();d.setDate(d.getDate()-10);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")}
-function fillSelect(){const select=$("lakeSelect"),keep=select.value;select.replaceChildren(new Option("Select a lake…",""));
-for(const n of [...new Set([...names,...Object.keys(db.lakes)])].sort((a,b)=>a.localeCompare(b)))select.add(new Option(n,n));
-select.add(new Option("Other lake…","__other__"));select.value=keep;}
-fillSelect();
-$("lakeSelect").addEventListener("change",()=>{
-const other=$("lakeSelect").value==="__other__";$("otherWrap").hidden=!other;
-const coords=db.lakes[$("lakeSelect").value]?.coords;$("lat").value=coords?.lat??"";$("lon").value=coords?.lon??"";
-});
-function validateCoords(requireCoords=false){
- const latText=$("lat").value.trim(),lonText=$("lon").value.trim();
- if(!latText&&!lonText&&!requireCoords)return null;
- if(!latText||!lonText||!Number.isFinite(Number(latText))||!Number.isFinite(Number(lonText))||
- Number(latText)<-90||Number(latText)>90||Number(lonText)<-180||Number(lonText)>180)
- throw Error("Enter valid lake latitude and longitude for satellite download.");
- return {lat:Number(latText),lon:Number(lonText)};
+// Reuse the unchanged satellite CSV import path. No coordinates are required
+// for matching satellite LST to measured in-situ dates.
+function validateCoords(required=false){
+ if(required)throw Error("For this calibration, upload an existing satellite LST CSV.");
+ return null;
 }
 function syncDownloadLake(){
  const area=$("lakeDataRows");if(!area)return;
- while(area.children.length>1){const last=area.lastElementChild,del=last.querySelector("button");if(del)del.click();else last.remove()}
- const row=area.firstElementChild;if(!row)return;
- row.querySelector('[name="name"]').value=lake;
- const coord=validateCoords(false);
- row.querySelector('[name="lat"]').value=coord?.lat??"";
- row.querySelector('[name="lon"]').value=coord?.lon??"";
+ while(area.children.length>1){
+  const last=area.lastElementChild,del=last.querySelector("button");
+  if(del)del.click();else last.remove();
+ }
+ const row=area.firstElementChild;
+ if(row)row.querySelector('[name="name"]').value=lake;
 }
 function syncDateRange(){
  if(!lake)return;
@@ -68,15 +57,15 @@ $("windowSelect").addEventListener("change",setActiveWindow);
 
 function invalidate(){pairs=[];run=null;$("matches").replaceChildren();$("metrics").replaceChildren();$("graph").replaceChildren();show("matchStatus","Data changed. Match dates again to update the audit.","neutral");show("calStatus","Apply correction after matching dates.","neutral");}
 function selectLake(){
- let candidate=$("lakeSelect").value;if(candidate==="__other__")candidate=$("otherName").value.trim();
- if(!candidate||candidate.length>80)throw Error("Select or enter one lake name.");
- const coords=validateCoords(false);
- lake=candidate;db.lakes[lake]={...defaultRecord(),...(db.lakes[lake]||{})};
+ const candidate=$("lakeName").value.trim();
+ if(!candidate || candidate.length>80)throw Error("Enter a lake name.");
+ const known=Object.keys(db.lakes).find(n=>n.toLocaleLowerCase()===candidate.toLocaleLowerCase());
+ lake=known||candidate;
+ db.lakes[lake]={...defaultRecord(),...(db.lakes[lake]||{})};
  try{localStorage.setItem("restlake:insitu-active-lake:v1",lake)}catch(e){}
- if(coords)db.lakes[lake].coords=coords;
- fillSelect();$("lakeSelect").value=lake;$("otherWrap").hidden=true;
- const prev=db.lakes[lake].coords;$("lat").value=prev?.lat??"";$("lon").value=prev?.lon??"";
- $("workspace").hidden=false;$("selectedLakeLabel").textContent="Selected: "+lake;
+ $("lakeName").value=lake;
+ $("workspace").hidden=false;
+ $("selectedLakeLabel").textContent="Lake: "+lake;
  $("remainingWorkspace").hidden=false;
  $("chooseLakeHint").hidden=true;
  for(const id of ["insituUpload","insituDate","insituTemp","upsert","saveObs","downloadInsitu","cancelEdit"])$(id).disabled=false;
@@ -88,9 +77,9 @@ function selectLake(){
  }
  refreshSavedValue();refreshFuture();renderPlot();persist();
 }
-$("chooseLake").onclick=()=>{try{selectLake()}catch(e){show("obsStatus",e.message,"danger");alert(e.message)}};
-for(const id of ["lat","lon"])$(id).addEventListener("change",()=>{
- if(!lake)return;try{data().coords=validateCoords(false);syncDownloadLake();persist()}catch(e){alert(e.message)}
+$("chooseLake").onclick=()=>{try{selectLake()}catch(e){show("obsStatus",e.message,"danger")}};
+$("lakeName").addEventListener("keydown",e=>{
+ if(e.key==="Enter"){e.preventDefault();selectLake();}
 });
 function renderObs(){
  const d=data(),host=$("observations");host.replaceChildren();
