@@ -67,18 +67,22 @@ function match(insitu,satellite,maxDays){
 function stats(pairs,bias=0){const n=pairs.length;if(!n)return {n:0,rmse:null,mae:null,mean_bias:null};
  const err=pairs.map(p=>p.satellite_lst_c+bias-p.insitu_temp_c);
  return {n,rmse:Math.sqrt(err.reduce((s,e)=>s+e*e,0)/n),mae:err.reduce((s,e)=>s+Math.abs(e),0)/n,mean_bias:err.reduce((s,e)=>s+e,0)/n};}
+// Single reusable per-lake additive correction. Fit to every accepted historical pair.
+function applySavedBias(satellite,bias){
+ if(!Number.isFinite(bias))throw Error("Save a valid calibration offset first.");
+ return satellite.map(row=>({...row,original_lst_c:row.observed_lst_c,
+   corrected_lst_c:row.observed_lst_c===null?null:row.observed_lst_c+bias,
+   applied_bias_c:row.observed_lst_c===null?0:bias}));
+}
 function calculate(pairs,satellite){
  const all=pairs.filter(p=>p.status!=="Unmatched").sort((a,b)=>a.insitu_date.localeCompare(b.insitu_date));
  if(!all.length)throw Error("No satellite observations matched an in-situ measurement.");
- const nTrain=all.length>=3?Math.max(2,Math.floor(0.7*all.length)):all.length;
- const train=all.slice(0,nTrain),held=all.slice(nTrain),bias=train.reduce((s,p)=>s+p.bias_c,0)/train.length;
- const corrected=satellite.map(row=>({...row,original_lst_c:row.observed_lst_c,
-   corrected_lst_c:row.observed_lst_c===null?null:row.observed_lst_c+bias,
-   applied_bias_c:row.observed_lst_c===null?0:bias}));
- return {all,train,held,bias,corrected,before:stats(all),after:stats(all,bias),
- calibrationBefore:stats(train),calibrationAfter:stats(train,bias),
- heldoutBefore:stats(held),heldoutAfter:stats(held,bias)};
+ const bias=all.reduce((s,p)=>s+p.bias_c,0)/all.length;
+ const corrected=applySavedBias(satellite,bias);
+ return {all,bias,corrected,before:stats(all,0),after:stats(all,bias),
+   date_start:all[0].insitu_date,date_end:all[all.length-1].insitu_date};
 }
+
 function csvValue(v){if(v===null||v===undefined)return "";
  const s=String(v);return /[",\r\n]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;}
 function makeCSV(rows,keys){return [keys.join(","),...rows.map(r=>keys.map(k=>csvValue(r[k])).join(","))].join("\n")+"\n";}
@@ -87,6 +91,6 @@ function auditCSV(result,pairs){const byDate=new Map(pairs.filter(p=>p.status!==
  return makeCSV(result.corrected.map(r=>({...r,matched_insitu_date:byDate.get(r.date)?.insitu_date||"",
  signed_delta_days:byDate.get(r.date)?.signed_delta_days??"",matching_status:byDate.get(r.date)?.status||"Not paired"})),
  ["date","air_temp_c","shortwave_w_m2","wind_speed_m_s","original_lst_c","corrected_lst_c","applied_bias_c","matched_insitu_date","signed_delta_days","matching_status"]);}
-return {toDate,iso,addMonths,parseCSV,number,validateInSitu,inSituCSV,satelliteCSV,span,match,stats,calculate,makeCSV,modelInputCSV,auditCSV,HEADER};
+return {toDate,iso,addMonths,parseCSV,number,validateInSitu,inSituCSV,satelliteCSV,span,match,stats,calculate,applySavedBias,makeCSV,modelInputCSV,auditCSV,HEADER};
 })();
 if(typeof module!=="undefined")module.exports=ReSTInSituCore;
