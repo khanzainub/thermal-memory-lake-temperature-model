@@ -36,3 +36,18 @@
 #advancedFutureArea{display:none!important}
 .insitu-shell .table-wrap:has(#observations){max-height:280px;overflow-y:auto}
 @media(max-width:650px){#downloadArea .insitu-fields{grid-template-columns:1fr}}
+
+/* Calibration-only upload layout; the model tabs and scientific functions are untouched. */
+.calibration-upload-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 20px}
+.calibration-upload-card{min-width:0;border:1px solid #cbdde7;background:#f8fbfd;border-radius:13px;padding:14px}
+.calibration-upload-card h3{margin:0 0 7px;font-size:16px;line-height:1.3}
+.calibration-upload-card .helper{margin:5px 0 10px;line-height:1.5}
+.calibration-upload-card .action-row{display:flex;flex-direction:column;align-items:stretch;gap:7px;margin:10px 0}
+.calibration-upload-card .action-row .button{display:flex;justify-content:center;align-items:center;width:100%;max-width:100%;box-sizing:border-box;text-align:center;white-space:normal;line-height:1.35;padding:9px 10px}
+.calibration-upload-card .file-name{display:block;overflow-wrap:anywhere;font-size:12px;line-height:1.5;margin:7px 0}
+.calibration-download-link{font-weight:700;text-decoration:underline;text-underline-offset:2px}
+#satelliteUploadLabel:has(input:disabled){opacity:.6;cursor:not-allowed}
+#downloadArea{margin-top:8px;padding-top:12px;border-top:2px solid #d8e4ed}
+#downloadArea .download-header{background:#f5f9fc}
+@media(max-width:650px){.calibration-upload-grid{gap:8px}.calibration-upload-card{padding:10px;border-radius:11px}.calibration-upload-card h3{font-size:14px}.calibration-upload-card .helper{font-size:11px}.calibration-upload-card .action-row .button{font-size:11px;padding:8px 6px}}
+@media(max-width:340px){.calibration-upload-grid{grid-template-columns:1fr}}
