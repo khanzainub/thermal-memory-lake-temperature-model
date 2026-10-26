@@ -11,11 +11,31 @@
 </section>
 <div id="workspace">
 <section class="panel">
-<div class="panel__heading"><div><span class="step">02</span><h2>Upload In-Situ CSV or enter observations</h2></div></div>
-<p id="chooseLakeHint" class="status-box status-box--neutral">Enter a lake name above, then upload a CSV or add observation dates and temperatures.</p><p class="helper">Add measured temperatures for <strong>any dates across multiple years</strong>, even with long gaps. CSV must contain exactly <code>date,insitu_temp_c</code>. Multiple CSV uploads add observations to the same lake, without deleting prior dates. Edit or delete individual rows as needed.</p>
-<div class="action-row"><label class="button button--primary" id="inSituUploadLabel">Upload In-Situ CSV (date,insitu_temp_c)<input id="insituUpload" class="hidden-input" type="file" accept=".csv,text/csv" disabled></label>
-<button class="button button--ghost" type="button" id="template">Download CSV template</button>
-<button class="button button--ghost" type="button" id="downloadInsitu" disabled>Download saved observations</button></div>
+<div class="panel__heading"><div><span class="step">02</span><h2>Upload calibration data</h2></div></div>
+<p id="chooseLakeHint" class="status-box status-box--neutral">Enter a lake name above before uploading either dataset or adding observations.</p>
+<p class="helper">Load your in-situ temperature observations and original satellite data together. For in-situ observations, the CSV must contain exactly <code>date,insitu_temp_c</code>; dates may be scattered across multiple years. Both uploads retain earlier records when new periods are added.</p>
+<div class="calibration-upload-grid" aria-label="Calibration input files">
+  <div class="calibration-upload-card">
+    <h3>In-Situ Data</h3>
+    <p class="helper">Measured lake temperature and observation date.</p>
+    <div class="action-row">
+      <label class="button button--primary" id="inSituUploadLabel">Upload In-Situ CSV<input id="insituUpload" class="hidden-input" type="file" accept=".csv,text/csv" disabled></label>
+      <button class="button button--ghost" type="button" id="template">Download CSV template</button>
+      <button class="button button--ghost" type="button" id="downloadInsitu" disabled>Download saved observations</button>
+    </div>
+  </div>
+  <div class="calibration-upload-card">
+    <h3>Satellite Data</h3>
+    <p class="helper">Original five-column satellite LST and atmospheric data.</p>
+    <div class="action-row">
+      <label class="button button--secondary" id="satelliteUploadLabel">Upload Satellite CSV<input id="satUpload" class="hidden-input" type="file" accept=".csv,text/csv" disabled></label>
+      <button id="downloadSatellite" class="button button--ghost" type="button">Download retained satellite CSV</button>
+    </div>
+    <p id="satCount" class="file-name">No satellite observations loaded</p>
+    <p class="helper">No satellite file? <a class="calibration-download-link" href="#downloadArea">Go to Download Satellite Data ↓</a></p>
+  </div>
+</div>
+<h3>Add in-situ observations manually</h3>
 <div class="insitu-fields"><label>Observation date<input type="date" id="insituDate" disabled></label>
 <label>Measured temperature (°C)<input type="number" id="insituTemp" disabled step="any" placeholder="e.g. 23.5"></label></div>
 <div class="action-row"><button class="button button--secondary" id="upsert" type="button" disabled>Add observation</button>
@@ -28,8 +48,8 @@
 </section>
 <div id="remainingWorkspace" hidden>
 <section id="downloadArea">
-<div class="panel download-header"><div class="panel__heading"><div><span class="step">03</span><h2>Download or upload satellite LST</h2></div></div>
-<p class="helper">Measurements can come from <strong>different months and years</strong> (for example, October 2018, April 2019, June 2022 and October 2025). The available in-situ dates automatically create separate ±1-month satellite-search windows; only overlapping windows are combined. Select each search period, download its satellite CSV using the <strong>unchanged Colab workflow</strong> below, and import each result. Intervening years are <strong>not</strong> downloaded unnecessarily.</p>
+<div class="panel download-header"><div class="panel__heading"><div><span class="step">03</span><h2>Download satellite data (optional)</h2></div></div>
+<p class="helper">Use this section only when you do not already have the original satellite CSV. In-situ measurements can come from <strong>different months and years</strong> (for example, October 2018, April 2019, June 2022 and October 2025). The available in-situ dates automatically create separate ±1-month satellite-search windows; only overlapping windows are combined. Select each search period, download its satellite CSV using the <strong>unchanged Colab workflow</strong> below, and import each result. Intervening years are <strong>not</strong> downloaded unnecessarily.</p>
 <div class="insitu-fields"><label>Satellite download date range (select each window)
 <select id="windowSelect" aria-label="Select observation window"></select></label>
 <label>Latitude (decimal degrees °) — satellite download only<input id="satelliteLat" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="e.g. 29.3856"></label>
@@ -67,11 +87,8 @@
 </section>
 <section class="panel">
 <div class="panel__heading"><div><span class="step">04</span><h2>Match historical satellite and in-situ dates</h2></div></div>
-<p class="helper">Import the original five-column satellite CSVs for <strong>each available historical period</strong>, whether from 2018, 2019, 2022 or 2025. You can upload them separately or import each Colab JSON result above. Their dates are <strong>merged without replacing existing historical records</strong>; overlapping duplicates are checked. Missing satellite dates remain missing. Once all periods are loaded, click Match observation dates.</p>
-<div class="action-row">
-<label class="button button--secondary">Upload satellite LST CSV<input id="satUpload" class="hidden-input" type="file" accept=".csv,text/csv"></label>
-<button id="downloadSatellite" class="button button--ghost" type="button">Download retained original satellite CSV</button>
-<span id="satCount" class="file-name">No satellite observations loaded</span></div>
+<p class="helper">Use the original five-column satellite CSVs uploaded in Step 02 or downloaded in Step 03 for <strong>each available historical period</strong>, whether from 2018, 2019, 2022 or 2025. You can upload them separately or import each Colab JSON result above. Their dates are <strong>merged without replacing existing historical records</strong>; overlapping duplicates are checked. Missing satellite dates remain missing. Once all periods are loaded, click Match observation dates.</p>
+
 <div class="insitu-fields"><label>Maximum nearest-date difference (days)<input id="maxDays" type="number" min="0" max="365" step="1" value="3"></label></div>
 <div class="action-row"><button type="button" id="matchDates" class="button button--secondary">Match observation dates</button></div>
 <div class="status-box status-box--neutral" role="status" id="matchStatus">Import satellite observations after saving in-situ measurements.</div>
