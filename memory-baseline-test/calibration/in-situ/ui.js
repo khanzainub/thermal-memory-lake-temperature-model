@@ -1,10 +1,8 @@
 "use strict";
 (()=>{
 const C=ReSTInSituCore, $=id=>document.getElementById(id);
-// Expand the optional satellite downloader when users follow the upload-card shortcut.
-document.querySelector(".calibration-download-link")?.addEventListener("click",()=>{$("downloadArea").open=true;});
 const STORE="restlake:insitu-calibration:2026-10-26:v1";
-let db={lakes:{}},lake="",editing=null, pairs=[],run=null;
+let db={lakes:{}},lake="",editing=null, pairs=[],run=null, selectedPairDate=null;
 try {const found=JSON.parse(localStorage.getItem(STORE)||"{}");if(found&&found.lakes&&typeof found.lakes==="object")db=found;}catch(e){}
 const defaultRecord=()=>({coords:null,draft:[],saved:[],satellite:[],satelliteSource:"",results:null,calibration:null,futureSatellite:[],futureSource:""});
 const data=()=>db.lakes[lake];
@@ -97,6 +95,7 @@ function selectLake(){
  if(!candidate || candidate.length>80)throw Error("Enter a lake name.");
  const known=Object.keys(db.lakes).find(n=>n.toLocaleLowerCase()===candidate.toLocaleLowerCase());
  lake=known||candidate;
+ selectedPairDate=null;
  db.lakes[lake]={...defaultRecord(),...(db.lakes[lake]||{})};
  try{localStorage.setItem("restlake:insitu-active-lake:v1",lake)}catch(e){}
  $("lakeName").value=lake;
@@ -113,7 +112,7 @@ function selectLake(){
    $("maxDays").value=data().calibration.matching_tolerance_days??3;
    renderPairs();renderMetrics();
  }
- refreshSavedValue();refreshFuture();renderPlot();persist();
+ refreshSavedValue();refreshFuture();if(!pairs.length&&data().saved.length&&data().satellite.length){try{matchDates()}catch(e){renderPlot()}}else renderPlot();persist();
 }
 $("chooseLake").onclick=()=>{try{selectLake()}catch(e){show("obsStatus",e.message,"danger")}};
 $("lakeName").addEventListener("keydown",e=>{
@@ -163,7 +162,7 @@ $("saveObs").onclick=()=>{
  const newlySaved=C.validateInSitu(data().draft),changed=JSON.stringify(newlySaved)!==JSON.stringify(data().saved);
  data().saved=newlySaved;
  if(changed){data().results=null;data().calibration=null;}
- const stored=persist();syncDateRange();renderObs();if(changed)invalidate();refreshSavedValue();refreshFuture();renderPlot();show("obsStatus",stored?"Saved "+data().saved.length+" in-situ observations for "+lake+".":"Saved in this session, but browser storage is full; download a backup.",stored?"success":"warning")}
+ const stored=persist();syncDateRange();renderObs();if(changed)invalidate();refreshSavedValue();refreshFuture();if(data().saved.length&&data().satellite.length)matchDates();else renderPlot();show("obsStatus",stored?"Saved "+data().saved.length+" in-situ observations for "+lake+".":"Saved in this session, but browser storage is full; download a backup.",stored?"success":"warning")}
  catch(e){show("obsStatus",e.message,"danger")}};
 $("template").onclick=()=>csvDownload("date,insitu_temp_c\n", "insitu_template.csv");
 $("downloadInsitu").onclick=()=>{if(!data().saved.length){show("obsStatus","Save observations first.","warning");return}
@@ -187,7 +186,7 @@ function applySatelliteCSV(csv,source){
  d.satelliteSources=[...new Set([...(d.satelliteSources||[]),source])];
  d.satelliteSource=d.satelliteSources.join("; ");
  if(changed){d.results=null;d.calibration=null;}
- persist();renderSatellite();if(changed)invalidate();refreshSavedValue();refreshFuture();renderPlot();
+ persist();renderSatellite();if(changed)invalidate();refreshSavedValue();refreshFuture();if(data().saved.length&&data().satellite.length)matchDates();else renderPlot();
  const years=[...new Set(combined.filter(r=>r.observed_lst_c!==null).map(r=>r.date.slice(0,4)))].sort();
  show("matchStatus","Imported "+incoming.filter(r=>r.observed_lst_c!==null).length+" satellite observation(s). Cumulative retained satellite dates: "+combined.filter(r=>r.observed_lst_c!==null).length+" across "+years.join(", ")+". Continue adding historical years, then match dates.","success");
 }
@@ -199,19 +198,57 @@ $("satUpload").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;
  catch(err){show("matchStatus",err.message,"danger")}finally{e.target.value=""}};
 $("downloadSatellite").onclick=()=>{if(!data().satellite.length){show("matchStatus","No imported satellite dataset.","warning");return}
  csvDownload(C.makeCSV(data().satellite,C.HEADER.split(",")),safeName()+"_original_satellite.csv")};
+function selectPair(date,scroll=false){
+ selectedPairDate=date;
+ const rows=[...$("matches").querySelectorAll("tr[data-observation-date]")];
+ for(const row of rows)row.classList.toggle("is-selected",row.dataset.observationDate===date);
+ const dots=$("graph").querySelectorAll("circle[data-obs-date]");
+ for(const dot of dots){
+  const selected=dot.dataset.obsDate===date;
+  dot.classList.toggle("is-selected",selected);
+  dot.setAttribute("r",selected?"7.5":dot.dataset.baseRadius||"4.3");
+  dot.setAttribute("aria-pressed",String(selected));
+ }
+ if(scroll){const row=rows.find(r=>r.dataset.observationDate===date);row?.scrollIntoView({behavior:"smooth",block:"nearest"});}
+}
+function beginPairEdit(row,p){
+ selectPair(p.insitu_date,false);
+ const td=row.lastElementChild;td.replaceChildren();
+ const input=document.createElement("input");input.type="number";input.step="any";input.value=p.insitu_temp_c;input.setAttribute("aria-label","In-situ temperature for "+p.insitu_date);
+ const save=document.createElement("button");save.type="button";save.textContent="Save";
+ const cancel=document.createElement("button");cancel.type="button";cancel.textContent="Cancel";
+ save.onclick=event=>{event.stopPropagation();try{
+  const valid=C.validateInSitu([{date:p.insitu_date,insitu_temp_c:input.value}])[0],d=data();
+  d.saved=C.validateInSitu(d.saved.map(o=>o.date===p.insitu_date?valid:o));
+  d.draft=C.validateInSitu([...d.draft.filter(o=>o.date!==p.insitu_date),valid]);
+  d.results=null;d.calibration=null;run=null;persist();renderObs();refreshSavedValue();refreshFuture();
+  selectedPairDate=p.insitu_date;matchDates();selectPair(p.insitu_date,false);
+  show("obsStatus","Updated "+p.insitu_date+". Recalibrate to save the new additive bias.","success");
+ }catch(e){show("matchStatus",e.message,"danger")}};
+ cancel.onclick=event=>{event.stopPropagation();renderPairs()};
+ td.append(input,save,cancel);input.focus();input.select();
+ input.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();save.click()}if(event.key==="Escape"){event.preventDefault();cancel.click()}});
+}
 function renderPairs(){
  $("matches").replaceChildren();
  for(const p of pairs){
-  const tr=document.createElement("tr");
+  const tr=document.createElement("tr");tr.dataset.observationDate=p.insitu_date;tr.tabIndex=0;
   for(const v of [p.insitu_date,p.insitu_temp_c,p.satellite_date||"—",p.satellite_lst_c===null?"—":p.satellite_lst_c,
     p.delta_days===null?"—":(p.signed_delta_days>0?"+":"")+p.signed_delta_days+" d",
     p.bias_c===null?"—":p.bias_c.toFixed(3),p.status]){
-     const td=document.createElement("td");td.textContent=v;tr.append(td)
-  }$("matches").append(tr)
+     const td=document.createElement("td");td.textContent=v;tr.append(td);
+  }
+  const cell=document.createElement("td"),edit=document.createElement("button");
+  edit.type="button";edit.textContent="Edit";edit.className="button button--ghost";
+  edit.onclick=e=>{e.stopPropagation();beginPairEdit(tr,p)};
+  cell.append(edit);tr.append(cell);
+  tr.addEventListener("click",e=>{if(!e.target.closest("button,input"))selectPair(p.insitu_date,false)});
+  tr.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target===tr){e.preventDefault();selectPair(p.insitu_date,false)}});
+  $("matches").append(tr);
  }
  const good=pairs.filter(x=>x.status!=="Unmatched").length;
- show("matchStatus","Matched "+good+" of "+pairs.length+" in-situ dates; "+(pairs.length-good)+" unmatched. Each satellite observation is used at most once.","success");
- renderPlot();
+ show("matchStatus","Matched "+good+" of "+pairs.length+" in-situ dates. Select a plot point or edit a row.","success");
+ renderPlot();if(selectedPairDate)selectPair(selectedPairDate,false);
 }
 function matchDates(){
  if(!data().saved.length)throw Error("Save in-situ observations first.");
@@ -221,7 +258,7 @@ function matchDates(){
  show("calStatus","Matches previewed. Click Apply Bias Correction / Calibrate to calculate statistics.","neutral");
 }
 $("matchDates").onclick=()=>{try{matchDates()}catch(e){show("matchStatus",e.message,"danger")}};
-$("maxDays").addEventListener("change",()=>{if(lake){data().results=null;data().calibration=null;persist();invalidate();refreshSavedValue();refreshFuture();renderPlot()}});
+$("maxDays").addEventListener("change",()=>{if(lake){data().results=null;data().calibration=null;persist();invalidate();refreshSavedValue();refreshFuture();if(data().saved.length&&data().satellite.length)matchDates();else renderPlot()}});
 function metric(label,value){const div=document.createElement("div");div.className="metric";const t=document.createElement("span");t.className="metric__label";t.textContent=label;const v=document.createElement("strong");v.className="metric__value";v.textContent=value;div.append(t,v);return div}
 const fmt=v=>Number.isFinite(v)?v.toFixed(3):"—";
 function renderMetrics(){
@@ -324,8 +361,9 @@ $("sendToModels").onclick=async()=>{
  }catch(e){show("futureStatus",e.message,"danger")}
 };
 
-function drawPoint(x,y,fill,title,r=4.3){
- return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+r+'" fill="'+fill+'" stroke="#fff" stroke-width="1.2"><title>'+esc(title)+'</title></circle>';
+function drawPoint(x,y,fill,title,r=4.3,obsDate=""){
+ const attr=obsDate?' data-obs-date="'+esc(obsDate)+'" data-base-radius="'+r+'" role="button" tabindex="0" aria-pressed="false" aria-label="Select '+esc(title)+'"':"";
+ return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+r+'" fill="'+fill+'" stroke="#fff" stroke-width="1.2"'+attr+'><title>'+esc(title)+'</title></circle>';
 }
 function esc(s){return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
 function renderPlot(){
@@ -350,14 +388,24 @@ function renderPlot(){
   connectors+='<line x1="'+xx+'" y1="'+yy+'" x2="'+sx+'" y2="'+sy+'" stroke="#8395a5" stroke-dasharray="4 5" stroke-width="1.2" opacity=".75"><title>'+esc(p.insitu_date+" ↔ "+p.satellite_date+" ("+p.signed_delta_days+" days)")+'</title></line>';
   if(assigned.size<20&&p.delta_days){assigned.add(p.insitu_date);connectors+='<text x="'+((xx+sx)/2)+'" y="'+((yy+sy)/2-6)+'" text-anchor="middle" font-size="11" fill="#5b7286">Δ'+p.signed_delta_days+'d</text>'}
  }
- const satelliteDots=sat.map(p=>drawPoint(x(p.date),y(p.observed_lst_c),"#5078ba",p.date+" original satellite "+p.observed_lst_c+"°C")).join("");
- const insituDots=ins.map(p=>drawPoint(x(p.date),y(p.insitu_temp_c),"#df6952",p.date+" in-situ "+p.insitu_temp_c+"°C",5)).join("");
- const correctedDots=run?run.corrected.filter(p=>p.corrected_lst_c!==null).map(p=>drawPoint(x(p.date),y(p.corrected_lst_c),"#049b98",p.date+" corrected "+p.corrected_lst_c.toFixed(3)+"°C")).join(""):"";
+ const pairedSat=new Map(pairs.filter(p=>p.status!=="Unmatched").map(p=>[p.satellite_date,p.insitu_date]));
+ const satelliteDots=sat.map(p=>drawPoint(x(p.date),y(p.observed_lst_c),"#5078ba",p.date+" original satellite "+p.observed_lst_c+"°C",4.3,pairedSat.get(p.date)||"")).join("");
+ const insituDots=ins.map(p=>drawPoint(x(p.date),y(p.insitu_temp_c),"#df6952",p.date+" in-situ "+p.insitu_temp_c+"°C",5,p.date)).join("");
+ const correctedDots=run?run.corrected.filter(p=>p.corrected_lst_c!==null).map(p=>drawPoint(x(p.date),y(p.corrected_lst_c),"#049b98",p.date+" corrected "+p.corrected_lst_c.toFixed(3)+"°C",4.3,pairedSat.get(p.date)||"")).join(""):"";
  const legend=[["#5078ba","Original satellite LST"],["#df6952","In-situ temperature"],["#049b98","Bias-corrected satellite LST"]].map(([c,t],i)=>'<circle cx="'+(left+i*260)+'" cy="14" r="5" fill="'+c+'"/><text x="'+(left+12+i*260)+'" y="18" font-size="12" fill="#34536a">'+t+'</text>').join("");
  $("graph").innerHTML='<svg id="insituPlot" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Original satellite, measured in-situ and corrected lake temperature observation plots">'+
  '<rect width="'+W+'" height="'+H+'" fill="#f8fbff"/>'+marks+legend+connectors+satelliteDots+correctedDots+insituDots+
  '<text x="19" y="'+(H/2)+'" font-size="14" text-anchor="middle" transform="rotate(-90 19 '+(H/2)+')" fill="#34536a">Temperature (°C)</text></svg>';
+ if(selectedPairDate)selectPair(selectedPairDate,false);
 }
+$("graph").addEventListener("click",event=>{
+ const dot=event.target.closest?.("circle[data-obs-date]");
+ if(dot?.dataset.obsDate)selectPair(dot.dataset.obsDate,true);
+});
+$("graph").addEventListener("keydown",event=>{
+ const dot=event.target.closest?.("circle[data-obs-date]");
+ if(dot?.dataset.obsDate&&(event.key==="Enter"||event.key===" ")){event.preventDefault();selectPair(dot.dataset.obsDate,true);}
+});
 function requireRun(){if(!run)throw Error("Apply the correction first.")}
 function guarded(action){try{action()}catch(e){show("calStatus",e.message,"danger")}}
 $("exportCorrected").onclick=()=>guarded(()=>{requireRun();csvDownload(C.modelInputCSV(run.corrected),safeName()+"_in_situ_corrected_model_input.csv")});
