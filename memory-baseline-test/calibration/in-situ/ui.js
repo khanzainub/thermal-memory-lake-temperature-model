@@ -138,20 +138,32 @@ $("template").onclick=()=>csvDownload("date,insitu_temp_c\n", "insitu_template.c
 $("downloadInsitu").onclick=()=>{if(!data().saved.length){show("obsStatus","Save observations first.","warning");return}
  csvDownload(C.makeCSV(data().saved,["date","insitu_temp_c"]),safeName()+"_insitu_observations.csv")};
 function renderSatellite(){
- const sat=data().satellite,n=sat.filter(x=>Number.isFinite(x.observed_lst_c)).length;
- $("satCount").textContent=sat.length?data().satelliteSource+" · "+sat.length+" daily rows · "+n+" available Landsat LST dates":"No satellite observations loaded";
+ const sat=data().satellite||[],n=sat.filter(x=>Number.isFinite(x.observed_lst_c)).length;
+ const years=[...new Set(sat.filter(r=>r.observed_lst_c!==null).map(r=>r.date.slice(0,4)))].sort();
+ $("satCount").textContent=sat.length?n+" Landsat dates across "+years.join(", ")+" · "+sat.length+" daily rows · "+(data().satelliteSources?.length||1)+" imported file(s)":"No satellite observations loaded";
 }
 function applySatelliteCSV(csv,source){
- const satellite=C.satelliteCSV(csv);if(satellite.length>10000)throw Error("Satellite file exceeds 10,000 daily records.");
- if(!satellite.some(r=>r.observed_lst_c!==null))throw Error("No valid observed satellite LST values in this CSV.");
- data().satellite=satellite;data().satelliteSource=source;data().results=null;data().calibration=null;
- persist();renderSatellite();invalidate();refreshSavedValue();refreshFuture();renderPlot();show("matchStatus","Loaded "+satellite.filter(r=>r.observed_lst_c!==null).length+" available satellite observations. Now match dates.","success");
+ if(/bias.?corrected|calibrated/i.test(source))throw Error("Historical matching requires ORIGINAL uncorrected satellite CSV files.");
+ const incoming=C.satelliteCSV(csv);
+ if(incoming.length>10000)throw Error("Imported period exceeds 10,000 rows.");
+ if(!incoming.some(r=>r.observed_lst_c!==null)){
+   show("matchStatus","No satellite LST found in this period. Earlier satellite CSVs are preserved; select the next window.","warning");return;
+ }
+ const d=data(),old=d.satellite||[],combined=C.mergeSatellite(old,incoming);
+ if(combined.length>25000)throw Error("Combined historical satellite dataset exceeds 25,000 rows.");
+ const changed=combined.length!==old.length||combined.some((row,i)=>row.date!==old[i]?.date||row.observed_lst_c!==old[i]?.observed_lst_c);
+ d.satellite=combined;
+ d.satelliteSources=[...new Set([...(d.satelliteSources||[]),source])];
+ d.satelliteSource=d.satelliteSources.join("; ");
+ if(changed){d.results=null;d.calibration=null;}
+ persist();renderSatellite();if(changed)invalidate();refreshSavedValue();refreshFuture();renderPlot();
+ const years=[...new Set(combined.filter(r=>r.observed_lst_c!==null).map(r=>r.date.slice(0,4)))].sort();
+ show("matchStatus","Imported "+incoming.filter(r=>r.observed_lst_c!==null).length+" satellite observation(s). Cumulative retained satellite dates: "+combined.filter(r=>r.observed_lst_c!==null).length+" across "+years.join(", ")+". Continue adding historical years, then match dates.","success");
 }
 $("satUpload").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;
  try{if(f.size>15000000)throw Error("Satellite CSV exceeds 15 MB.");
   const text=await f.text();
-  if(data().calibration){loadLaterCSV(text,f.name);}
-  else applySatelliteCSV(text,f.name);
+  applySatelliteCSV(text,f.name);
  }
  catch(err){show("matchStatus",err.message,"danger")}finally{e.target.value=""}};
 $("downloadSatellite").onclick=()=>{if(!data().satellite.length){show("matchStatus","No imported satellite dataset.","warning");return}
@@ -186,6 +198,7 @@ function renderMetrics(){
  if(!run)return;
  const cells=[
  ["Matched historical pairs",String(run.all.length)],
+ ["Matched years",[...new Set(run.all.map(p=>p.insitu_date.slice(0,4)))].join(", ")],
  ["Reusable calibration bias",fmt(run.bias)+" °C"],
  ["RMSE before → after",fmt(run.before.rmse)+" → "+fmt(run.after.rmse)+" °C"],
  ["MAE before → after",fmt(run.before.mae)+" → "+fmt(run.after.mae)+" °C"],
