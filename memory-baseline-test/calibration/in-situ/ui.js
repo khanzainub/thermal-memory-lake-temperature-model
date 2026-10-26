@@ -147,16 +147,28 @@ $("cancelEdit").onclick=()=>{editing=null;$("insituDate").value="";$("insituTemp
 $("insituUpload").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;
  try{
  if(f.size>5000000)throw Error("Maximum in-situ CSV file is 5 MB.");
- const incoming=C.inSituCSV(await f.text()),all=new Map((data().draft||[]).map(row=>[row.date,row]));
+ const incoming=C.inSituCSV(await f.text(),lake),d=data();
+ const all=new Map((d.draft?.length?d.draft:d.saved||[]).map(row=>[row.date,row]));
+ let updated=0;
  for(const row of incoming){
-   if(all.has(row.date)&&Math.abs(all.get(row.date).insitu_temp_c-row.insitu_temp_c)>1e-9)throw Error("Conflicting in-situ temperature for "+row.date+". Use Edit to change the existing observation.");
+   if(all.has(row.date)&&Math.abs(all.get(row.date).insitu_temp_c-row.insitu_temp_c)>1e-9)updated++;
    all.set(row.date,row);
  }
- data().draft=C.validateInSitu([...all.values()]);
- editing=null;renderObs();invalidate();
- show("obsStatus","Added "+incoming.length+" rows, retaining "+data().draft.length+" distinct in-situ dates across all years. Click Save observations.","success");
+ const merged=C.validateInSitu([...all.values()]);
+ const changed=JSON.stringify(merged)!==JSON.stringify(d.saved);
+ d.draft=merged;d.saved=structuredClone(merged);
+ if(changed){d.results=null;d.calibration=null;}
+ editing=null;selectedPairDate=null;
+ const stored=persist();renderObs();syncDateRange();if(changed)invalidate();
+ refreshSavedValue();refreshFuture();
+ if(d.saved.length&&d.satellite.length)matchDates();else renderPlot();
+ const windows=C.searchWindows(d.saved);
+ const message="Imported "+incoming.length+" CSV observations; "+d.saved.length+" total saved dates across "+windows.length+" satellite window(s)."+
+   (updated?" "+updated+" existing date value(s) replaced from this CSV.":"")+
+   " Window selection limits the satellite download only, not the in-situ records.";
+ show("obsStatus",stored?message:message+" Browser storage is full; these changes may not persist after refresh.",stored?"success":"warning");
 }
- catch(err){show("obsStatus",err.message,"danger")}finally{e.target.value=""}};
+ catch(err){show("obsStatus","Import failed: "+err.message+". Existing saved observations were retained.","danger")}finally{e.target.value=""}};
 $("saveObs").onclick=()=>{
  try{if(!data().draft.length)throw Error("Add at least one valid observation.");
  const newlySaved=C.validateInSitu(data().draft),changed=JSON.stringify(newlySaved)!==JSON.stringify(data().saved);
