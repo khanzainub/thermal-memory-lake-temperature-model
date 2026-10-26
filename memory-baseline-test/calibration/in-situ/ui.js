@@ -118,7 +118,11 @@ function applySatelliteCSV(csv,source){
  persist();renderSatellite();invalidate();refreshSavedValue();refreshFuture();renderPlot();show("matchStatus","Loaded "+satellite.filter(r=>r.observed_lst_c!==null).length+" available satellite observations. Now match dates.","success");
 }
 $("satUpload").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;
- try{if(f.size>15000000)throw Error("Satellite CSV exceeds 15 MB.");applySatelliteCSV(await f.text(),f.name)}
+ try{if(f.size>15000000)throw Error("Satellite CSV exceeds 15 MB.");
+  const text=await f.text();
+  if(data().calibration){loadLaterCSV(text,f.name);}
+  else applySatelliteCSV(text,f.name);
+ }
  catch(err){show("matchStatus",err.message,"danger")}finally{e.target.value=""}};
 $("downloadSatellite").onclick=()=>{if(!data().satellite.length){show("matchStatus","No imported satellite dataset.","warning");return}
  csvDownload(C.makeCSV(data().satellite,C.HEADER.split(",")),safeName()+"_original_satellite.csv")};
