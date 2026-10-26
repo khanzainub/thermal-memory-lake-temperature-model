@@ -47,8 +47,9 @@
 <div class="status-box status-box--neutral" role="status" id="obsStatus">Add or upload observations, then save.</div>
 </section>
 <div id="remainingWorkspace" hidden>
-<section id="downloadArea">
-<div class="panel download-header"><div class="panel__heading"><div><span class="step">03</span><h2>Download satellite data (optional)</h2></div></div>
+<details id="downloadArea" class="calibration-download-details">
+<summary class="calibration-download-summary"><span class="step">03</span><span>Download Satellite Data <small>(Optional)</small></span></summary>
+<div class="panel download-header">
 <p class="helper">Use this section only when you do not already have the original satellite CSV. In-situ measurements can come from <strong>different months and years</strong> (for example, October 2018, April 2019, June 2022 and October 2025). The available in-situ dates automatically create separate ±1-month satellite-search windows; only overlapping windows are combined. Select each search period, download its satellite CSV using the <strong>unchanged Colab workflow</strong> below, and import each result. Intervening years are <strong>not</strong> downloaded unnecessarily.</p>
 <div class="insitu-fields"><label>Satellite download date range (select each window)
 <select id="windowSelect" aria-label="Select observation window"></select></label>
@@ -84,7 +85,7 @@
           <div id="lakeDataResults" class="lake-data-results"></div>
         </details>
       </section>
-</section>
+</details>
 <section class="panel">
 <div class="panel__heading"><div><span class="step">04</span><h2>Match historical satellite and in-situ dates</h2></div></div>
 <p class="helper">Use the original five-column satellite CSVs uploaded in Step 02 or downloaded in Step 03 for <strong>each available historical period</strong>, whether from 2018, 2019, 2022 or 2025. You can upload them separately or import each Colab JSON result above. Their dates are <strong>merged without replacing existing historical records</strong>; overlapping duplicates are checked. Missing satellite dates remain missing. Once all periods are loaded, click Match observation dates.</p>
