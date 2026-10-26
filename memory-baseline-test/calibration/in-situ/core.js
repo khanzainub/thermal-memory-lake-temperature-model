@@ -44,6 +44,37 @@ function satelliteCSV(text){const {headers,rows}=parseCSV(text);if(headers.join(
  }).sort((a,b)=>a.date.localeCompare(b.date))}
 function span(observations){if(!observations.length)return null;const sorted=[...observations].sort((a,b)=>a.date.localeCompare(b.date));
  return {start:addMonths(sorted[0].date,-1),end:addMonths(sorted[sorted.length-1].date,1)}}
+// Every observed in-situ date supplies a separate ±1 calendar month satellite search
+// window. Merge overlapping windows only; never span unsampled intervening years.
+function searchWindows(observations){
+ const valid=validateInSitu(observations),windows=[];
+ for(const observation of valid){
+   const start=addMonths(observation.date,-1),end=addMonths(observation.date,1),last=windows[windows.length-1];
+   const nextDay=last?iso(new Date(toDate(last.end).getTime()+DAY)):null;
+   if(last && start<=nextDay){
+     if(end>last.end)last.end=end;
+     last.observation_count++;
+     last.last_observation=observation.date;
+   }else windows.push({start,end,observation_count:1,first_observation:observation.date,last_observation:observation.date});
+ }
+ return windows;
+}
+// Merge successive original satellite CSVs from disjoint years; no replacement
+// or interpolation. Conflicting non-null observations on the same day are rejected.
+function mergeSatellite(existing,incoming){
+ const merged=new Map(existing.map(r=>[r.date,{...r}]));
+ for(const row of incoming){
+   const prior=merged.get(row.date);
+   if(!prior){merged.set(row.date,{...row});continue;}
+   if(prior.observed_lst_c===null && row.observed_lst_c!==null){
+     merged.set(row.date,{...row});
+   }else if(prior.observed_lst_c!==null&&row.observed_lst_c!==null&&
+     Math.abs(prior.observed_lst_c-row.observed_lst_c)>0.000001){
+     throw Error("Conflicting satellite temperatures at "+row.date+". Check source CSVs before merging.");
+   }
+ }
+ return [...merged.values()].sort((a,b)=>a.date.localeCompare(b.date));
+}
 function match(insitu,satellite,maxDays){
  if(!Number.isInteger(maxDays)||maxDays<0||maxDays>365)throw Error("Matching tolerance must be 0–365 whole days.");
  const sat=satellite.filter(x=>Number.isFinite(x.observed_lst_c));
@@ -91,6 +122,6 @@ function auditCSV(result,pairs){const byDate=new Map(pairs.filter(p=>p.status!==
  return makeCSV(result.corrected.map(r=>({...r,matched_insitu_date:byDate.get(r.date)?.insitu_date||"",
  signed_delta_days:byDate.get(r.date)?.signed_delta_days??"",matching_status:byDate.get(r.date)?.status||"Not paired"})),
  ["date","air_temp_c","shortwave_w_m2","wind_speed_m_s","original_lst_c","corrected_lst_c","applied_bias_c","matched_insitu_date","signed_delta_days","matching_status"]);}
-return {toDate,iso,addMonths,parseCSV,number,validateInSitu,inSituCSV,satelliteCSV,span,match,stats,calculate,applySavedBias,makeCSV,modelInputCSV,auditCSV,HEADER};
+return {toDate,iso,addMonths,parseCSV,number,validateInSitu,inSituCSV,satelliteCSV,span,searchWindows,mergeSatellite,match,stats,calculate,applySavedBias,makeCSV,modelInputCSV,auditCSV,HEADER};
 })();
 if(typeof module!=="undefined")module.exports=ReSTInSituCore;
