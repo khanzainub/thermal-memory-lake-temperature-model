@@ -140,3 +140,32 @@
  .command-v2 *, .command-v2 *::before, .command-v2 *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 }
 .command-v2.motion-paused *, .command-v2.motion-paused *::before, .command-v2.motion-paused *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+
+
+/* Activity-specific illumination: no false running state when idle. */
+.command-v2.command-data-busy .calibration-upload-card,
+.command-v2.command-data-busy .drop-zone,
+.command-v2.command-data-busy .lake-data-panel{
+  border-color:rgba(109,255,234,.9)!important;
+  box-shadow:0 0 26px rgba(50,225,226,.22),inset 0 0 18px rgba(61,194,226,.09)!important
+}
+.command-v2.command-data-busy .calibration-upload-card::after,
+.command-v2.command-data-busy .drop-zone::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(100deg,transparent 24%,rgba(119,255,240,.13) 50%,transparent 70%);
+  background-size:240% 100%;animation:command-sweep 1.4s linear infinite
+}
+.command-v2.command-engine-busy .command-module-bar,
+.command-v2.command-engine-busy #compareModels{
+  border-color:rgba(93,244,233,.63)!important;
+  box-shadow:0 0 30px rgba(51,224,220,.16),inset 0 1px rgba(174,254,246,.12)
+}
+.command-v2.command-engine-busy .command-module-tag .command-module-led{
+  animation:command-pulse .6s ease-in-out infinite alternate
+}
+@media(prefers-reduced-motion:reduce){
+  .command-v2.command-data-busy .calibration-upload-card::after,
+  .command-v2.command-data-busy .drop-zone::after{animation:none}
+}
+.command-v2.motion-paused.command-data-busy .calibration-upload-card::after,
+.command-v2.motion-paused.command-data-busy .drop-zone::after{animation:none}

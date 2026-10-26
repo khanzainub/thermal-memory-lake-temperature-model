@@ -16,6 +16,8 @@
     const prior=statuses[channel],changed=prior.kind!==kind||prior.text!==message;
     if(!changed)return;
     statuses[channel]={kind,text:message};
+    document.body.classList.toggle("command-data-busy",statuses.data.kind==="busy");
+    document.body.classList.toggle("command-engine-busy",statuses.engine.kind==="busy");
     if(parent){
       const el=chips[channel];if(el){
         el.className="command-chip state-"+kind;el.querySelector(".command-chip-value").textContent=message;
