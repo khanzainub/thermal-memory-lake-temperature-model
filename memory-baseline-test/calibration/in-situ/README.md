@@ -1,25 +1,25 @@
-# Independent In-Situ Calibration tab
+# ReST-Lake — reusable lake satellite LST bias calibration
 
-This folder is isolated from the original With-Memory and Zero-Memory implementations.
+This is one additional calibration tab within the cloned `memory-baseline-test/calibration/` application. It is **not** a third lake-temperature model. Neither existing With-Memory nor Zero-Memory solver was changed.
 
-## Data acquisition
-The original Google Colab interface and pipeline are reused without modification.
-Its actual historical data backend is Landsat 8/9 STAC from Microsoft's Planetary Computer plus ERA5 from Open-Meteo, **not the Google Earth Engine API**. No substitute scientific algorithm or new imagery source was introduced.
-Choose a lake, add geographical coordinates and save in-situ observations, then download using the original Colab controls. Search dates automatically span one calendar month before the first saved observation and one calendar month after the last, subject to the downloader's existing 10-day recency restriction. Existing model-input CSV is unchanged: `date,air_temp_c,shortwave_w_m2,wind_speed_m_s,observed_lst_c`.
+## Intended workflow
+1. Select a lake. Enter measured water temperatures by date manually or upload `date,insitu_temp_c`.
+2. Download historical satellite data around the in-situ period with the exact original Google Colab pipeline, or upload an original five-column ReST-Lake satellite CSV.
+3. Match dates exactly where possible, otherwise use nearest satellite observations within a user-set maximum difference. Each satellite observation is used once.
+4. Calculate one lake-specific additive correction value from **all** accepted historical pairs, `bias_C = mean(insitu_temp_c - observed_lst_c)`.
+5. Save that one correction value per lake. Example: calibrate on October 2018 and reuse the stored value on 2019, 2020, etc. There is **no new 70:30 experiment** or auxiliary model in this tab.
+6. When any newer original satellite CSV for that lake is imported into this tab, it is automatically corrected using the saved value: `corrected_LST = original_LST + bias_C`. Download it in the exact model-input schema, or use **Use calibrated CSV in With Memory & Baseline**.
+7. The main calibration-page shared CSV loader also auto-applies an available saved bias for an *original* Daily CSV whose filename unambiguously starts with the selected lake's name, e.g. `Naini_daily_model_input.csv`. Its status explicitly reports the correction. Files visibly marked `corrected` or `calibrated` are not corrected again.
 
-## In-situ input
-Use exactly `date,insitu_temp_c` (YYYY-MM-DD, degrees C). Add, edit, remove and save individually per selected lake. The browser retains data using a separate `restlake:insitu-calibration:2026-10-26:v1` localStorage key. Clearing browser data removes it; back up with exports. No synthetic measurements are included.
+The unmodified five-column original CSV is `date,air_temp_c,shortwave_w_m2,wind_speed_m_s,observed_lst_c`. Original observations are never overwritten, and only non-empty observed LST values receive a numerical offset. Missing values stay missing. The saved in-situ CSV, matched pairs, calibration metrics, correction value, corrected historical CSV, corrected future CSV and plot can be downloaded. Browser-local saved state is separate for each lake; download backups before clearing browser storage.
 
-## Matching
-Only non-null satellite observations are considered. Dates are paired by minimum absolute separation under the selected maximum tolerance (0–365 days); exact matches are processed first, then nearest by increasing difference, earlier satellite date breaking ties. A given satellite date can be paired at most once. The full table includes unmatched observations. Day difference is signed as satellite date minus in-situ date.
+## Sources and scientific caution
+The original download workflow is reused unmodified: Google Colab runs the existing Planetary Computer Landsat 8/9 STAC plus ERA5 (Open-Meteo) pipeline. It does **not** use the Google Earth Engine API despite the original shorthand. No new imagery retrieval implementation was substituted.
 
-## Additive correction
-For chronological accepted pairs, the earlier 70% (at least 2 pairs when 3+ are available) form the calibration set and all later pairs are held out. A constant offset `mean(Tinsitu - Tsatellite)` is computed **only** from the calibration set and added only to existing satellite temperatures. It does not create data for absent dates. All-pairs diagnostics are displayed but are not independent evidence. Held-out before/after RMSE and MAE are shown separately. Very small pair counts are exploratory and should not be used as definitive scientific validation.
+The saved mean bias is an **assumed constant systematic offset**, not an independently validated future-period calibration; sensor/overpass/skin-versus-bulk temperature differences or seasonal change may cause that offset to drift. RMSE and MAE before/after are calculated on the same historical pairs used to estimate the bias and must be labelled **in-sample calibration diagnostics**. They are not claimed to be held-out model validation. A nearest-date match can include true day-to-day thermal variation. There are no fabricated or silently interpolated satellite temperatures.
 
-The system never modifies the original With Memory or Zero Memory engines, state, outputs or source data. Bias-corrected model-input CSV is exported separately and is not automatically loaded into either model. Plot points represent measured/retrieved dates only. The date connector length/label makes temporal mismatch explicit. In-situ skin/bulk temperature and overpass timing mismatch may affect the interpretation of bias.
-
-## Files
-`index.html`: independent iframe UI
-`core.js`: standalone matching, validation and statistics
-`ui.js`: tab-specific data input, import, download, plots and export
-`lake-data-ui.js` and `data-download/lake_data.py`: byte-identical originals
+## Preserve old models
+- Original `with-memory/app.js` untouched.
+- Original `baseline/app.js` untouched.
+- Parent `comparison.js` routes a **corrected input CSV** into the original model loaders when appropriate; it never changes either model's scientific calculation code.
+- Distinct localStorage key: `restlake:insitu-calibration:2026-10-26:v1`, storing `calibration.version=2` for the new reusable mean-bias method. Legacy 70:30 in-situ results are not silently converted to new bias values.
