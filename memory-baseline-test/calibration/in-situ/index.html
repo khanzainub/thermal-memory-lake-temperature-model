@@ -32,8 +32,8 @@
 <p class="helper">Measurements can come from <strong>different months and years</strong> (for example, October 2018, April 2019, June 2022 and October 2025). The available in-situ dates automatically create separate ±1-month satellite-search windows; only overlapping windows are combined. Select each search period, download its satellite CSV using the <strong>unchanged Colab workflow</strong> below, and import each result. Intervening years are <strong>not</strong> downloaded unnecessarily.</p>
 <div class="insitu-fields"><label>Satellite download date range (select each window)
 <select id="windowSelect" aria-label="Select observation window"></select></label>
-<label>Latitude (°) — satellite download only<input id="satelliteLat" type="number" step="any" min="-90" max="90" placeholder="Enter satellite latitude"></label>
-<label>Longitude (°) — satellite download only<input id="satelliteLon" type="number" step="any" min="-180" max="180" placeholder="Enter satellite longitude"></label></div>
+<label>Latitude (decimal degrees °) — satellite download only<input id="satelliteLat" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="e.g. 29.3856"></label>
+<label>Longitude (decimal degrees °) — satellite download only<input id="satelliteLon" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="e.g. 79.4592"></label></div>
 <div id="windowSummary" class="helper">Save dated in-situ observations to populate the available windows.</div>
 <div id="rangeInfo" class="status-box status-box--neutral">The selected date window will populate the original downloader controls below.</div></div>
 <section class="panel lake-data-panel" aria-labelledby="lakeDataTitle">

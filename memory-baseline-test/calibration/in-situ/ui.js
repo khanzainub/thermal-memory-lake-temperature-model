@@ -11,13 +11,34 @@ function persist(){try{localStorage.setItem(STORE,JSON.stringify(db));return tru
 function csvDownload(content,name,type="text/csv;charset=utf-8"){const url=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement("a");a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),20000)}
 function safeName(){return lake.replace(/[^a-z0-9_-]/gi,"_").replace(/_+/g,"_")}
 function maxAvailable(){const d=new Date();d.setDate(d.getDate()-10);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")}
+// Accept decimal degrees on mobile and send numeric values to the
+// unchanged Colab downloader (which retains its original number inputs).
+// This does not accept degree/minute/second notation.
+function decimalDegrees(raw,label,limit) {
+ const normalized=String(raw).trim()
+   .replace(/[\u0660-\u0669]/g,c=>String(c.charCodeAt(0)-0x0660))
+   .replace(/[\u06F0-\u06F9]/g,c=>String(c.charCodeAt(0)-0x06F0))
+   .replace(/[\uFF10-\uFF19]/g,c=>String(c.charCodeAt(0)-0xFF10))
+   .replace(/[\uFF0E\u066B]/g,".")
+   .replace(/[\u2212\uFF0D]/g,"-")
+   .replace(/[,\u066C]/g,".")
+   .replace(/\s*°\s*$/,"");
+ if(!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized))
+   throw Error(label+" must be decimal degrees, e.g. 29.3856 or 79.4592 (not degrees/minutes/seconds).");
+ const value=Number(normalized);
+ if(!Number.isFinite(value)||Math.abs(value)>limit)
+   throw Error(label+" must be between "+(-limit)+" and "+limit+" decimal degrees.");
+ return value;
+}
 // Coordinates are used only for satellite download, never in-situ input.
 function validateCoords(required=false){
  const a=$("satelliteLat").value.trim(),b=$("satelliteLon").value.trim();
- if(!a&&!b){if(required)throw Error("Enter latitude and longitude in Satellite LST download.");return null}
- const lat=Number(a),lon=Number(b);
- if(!a||!b||!Number.isFinite(lat)||!Number.isFinite(lon)||lat< -90||lat>90||lon< -180||lon>180)
-  throw Error("Enter valid latitude and longitude for satellite download.");
+ if(!a&&!b){
+  if(required)throw Error("Enter latitude and longitude as decimal degrees in Satellite LST download.");
+  return null;
+ }
+ if(!a||!b)throw Error("Enter both satellite latitude and longitude in decimal degrees.");
+ const lat=decimalDegrees(a,"Latitude",90),lon=decimalDegrees(b,"Longitude",180);
  return {lat,lon};
 }
 function syncDownloadLake(){
