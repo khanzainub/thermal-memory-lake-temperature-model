@@ -77,3 +77,11 @@
 #insituPlot circle.is-selected{stroke:#17314c!important;stroke-width:3!important}
 #insituPlot circle[data-obs-date]:focus-visible{stroke:#17314c;stroke-width:3}
 @media(max-width:650px){#downloadArea .lake-data-panel .action-row{display:flex;flex-wrap:wrap}#matches input[type=number]{width:74px}}
+
+/* All satellite windows are downloaded by a single Colab notebook.
+   Preserve the existing in-situ data table, graphs and bias results. */
+#downloadArea #windowSelect{display:none!important}
+#downloadArea .lake-data-dates{display:none!important}
+#downloadArea #lakeDataRows{display:none!important}
+#downloadArea .lake-data-import,#downloadArea #lakeDataResults{display:none!important}
+#downloadArea #addLakeDataRow{display:none!important}

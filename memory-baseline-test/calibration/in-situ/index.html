@@ -12,6 +12,7 @@
 <div id="workspace">
 <section class="panel">
 <div class="panel__heading"><div><span class="step">02</span><h2>In-Situ and Satellite Data</h2></div></div>
+<p class="helper">Colab will export one <code>&lt;LakeName&gt;_satellite_LST_bias_calibration.csv</code> for all separate observation periods, not a general <code>model_input</code> file. Upload that CSV using <strong>Upload Satellite CSV</strong> below.</p>
 <p id="chooseLakeHint" class="status-box status-box--neutral">Enter a lake name above before uploading either dataset or adding observations.</p>
 <p class="helper">In-situ CSV columns: <code>date,insitu_temp_c</code>. Upload separate periods as needed.</p>
 <div class="calibration-upload-grid" aria-label="Calibration input files">
@@ -49,15 +50,15 @@
 <details id="downloadArea" class="calibration-download-details">
 <summary class="calibration-download-summary"><span class="step">03</span><span>Download Satellite Data <small>(Optional)</small></span></summary>
 <div class="panel download-header">
-<p class="helper">Windows are generated automatically from in-situ dates (±1 month per period).</p>
-<div class="insitu-fields"><label>Synced satellite date windows
-<select id="windowSelect" aria-label="Select observation window"></select></label>
+<p class="helper">All saved in-situ dates are grouped into separate ±1-month satellite windows. Download one Colab notebook: it runs every window automatically and produces ONE combined satellite CSV.</p>
+<div class="insitu-fields"><label hidden>Automatically included satellite windows
+<select id="windowSelect" aria-label="All satellite windows included in one notebook"></select></label>
 <label>Latitude (decimal degrees)<input id="satelliteLat" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="e.g. 29.3856"></label>
 <label>Longitude (decimal degrees)<input id="satelliteLon" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="e.g. 79.4592"></label></div>
-<div id="windowSummary" class="helper">Save dated in-situ observations to populate the available windows.</div>
-<div id="rangeInfo" class="status-box status-box--neutral">Dates sync automatically with the selected window.</div></div>
+<div id="windowSummary" class="helper">All observation windows will be downloaded together by one notebook.</div>
+<div id="rangeInfo" class="status-box status-box--neutral">One notebook will process every ±1-month satellite window, skipping gaps.</div></div>
 <section class="panel lake-data-panel" aria-labelledby="lakeDataTitle">
-        <div id="lakeDataDetails"><p class="helper" id="lakeDataTitle">Download notebook → Run in Colab → Import results.</p>
+        <div id="lakeDataDetails"><p class="helper" id="lakeDataTitle">Download one notebook → Run all windows in Colab → Upload the one combined satellite CSV.</p>
           
           
           <form id="lakeDataForm">
@@ -69,13 +70,13 @@
             <div id="lakeDataRows"></div>
             <div class="action-row">
               <button id="addLakeDataRow" type="button" class="button button--secondary">+ Add lake</button>
-              <button type="submit" id="prepareLakeNotebook" class="button button--primary">1. Download notebook</button>
+              <button type="submit" id="prepareLakeNotebook" class="button button--primary">1. Download ALL windows notebook</button>
               <a class="button button--ghost lake-data-link" href="https://colab.research.google.com/" target="_blank" rel="noopener noreferrer">2. Open Colab</a>
             </div>
           </form>
           
-          <label class="button button--ghost lake-data-import">3. Import result file<input id="lakeDataBundle" type="file" accept=".json,application/json"></label>
-          <div id="lakeDataStatus" class="status-box status-box--neutral" role="status">Add your lakes to prepare a notebook. No Google password is entered on this page.</div>
+          <label class="button button--ghost lake-data-import" hidden>Legacy JSON import<input id="lakeDataBundle" type="file" accept=".json,application/json"></label>
+          <div id="lakeDataStatus" class="status-box status-box--neutral" role="status">Select a lake, save in-situ dates, enter satellite decimal-degree coordinates, then download ONE notebook for ALL date windows.</div>
           <div id="lakeDataResults" class="lake-data-results"></div>
         </div>
       </section>
