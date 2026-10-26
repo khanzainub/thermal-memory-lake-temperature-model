@@ -58,14 +58,10 @@
           <div id="lakeDataResults" class="lake-data-results"></div>
         </details>
       </section>
-<section class="panel" id="sharedModelInput"><div class="panel__heading"><div><span class="step">MODEL INPUT</span><h2>With Memory &amp; Baseline — satellite model-input CSV</h2></div></div>
-<p class="helper">Only for With Memory and Baseline: download the original five-column satellite/weather CSV above, or upload one you already have. To upload <code>date,insitu_temp_c</code>, choose the In-Situ Calibration tab.</p>
-<div class="shared-upload"><label class="button button--primary">Upload model-input CSV<input id="sharedCsv" type="file" accept=".csv,text/csv"></label><span id="sharedFile">No CSV loaded</span></div>
-<div id="sharedStatus" class="status-box status-box--neutral" role="status">Download or choose a CSV, then run the two models separately.</div></section>
-<section id="compareModels" class="panel comparison"><div class="panel__heading"><div><span class="step">TEST</span><h2>With Memory vs Baseline</h2></div></div>
+<section id="compareModels" class="panel comparison"><div class="panel__heading"><div><span class="step">TEST</span><h2>ReST-Lake Model &amp; Calibration</h2></div></div>
 <div class="cmp-tabs" role="tablist" aria-label="Model choice"><button id="tabMemory" role="tab" type="button" aria-selected="true" aria-controls="memoryPane" class="cmp-active">With Memory · Original</button><button id="tabBaseline" role="tab" type="button" aria-selected="false" aria-controls="baselinePane">Baseline · M = 0</button><button id="tabInSitu" role="tab" type="button" aria-selected="false" aria-controls="inSituPane">In-Situ Calibration</button></div>
 <p class="helper" id="modeNote">Unchanged original ReST-Lake. Temporal memory is estimated.</p>
 <section id="memoryPane" role="tabpanel" aria-labelledby="tabMemory"><iframe id="frameMemory" title="With Memory Model" src="with-memory/index.html" loading="eager"></iframe></section>
 <section id="baselinePane" role="tabpanel" aria-labelledby="tabBaseline" hidden><iframe id="frameBaseline" title="Baseline Model" src="baseline/index.html" loading="eager"></iframe></section><section id="inSituPane" role="tabpanel" aria-labelledby="tabInSitu" hidden><iframe id="frameInSitu" title="In-Situ Calibration" src="in-situ/index.html" loading="lazy"></iframe></section></section>
 </main><footer class="cmp-footer">ReST-Lake scientific model comparison · Original repository files preserved</footer></div>
-<script src="in-situ/core.js"></script><script src="comparison.js"></script><script src="lake-data-ui.js?v=compare"></script><script src="in-situ-tab.js"></script></body></html>
+<script src="in-situ/core.js"></script><script src="comparison.js?v=20261026b"></script><script src="lake-data-ui.js?v=compare"></script><script src="in-situ-tab.js?v=20261026b"></script></body></html>

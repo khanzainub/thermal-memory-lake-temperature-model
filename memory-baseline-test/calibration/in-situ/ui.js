@@ -72,6 +72,7 @@ function selectLake(){
  if(!candidate||candidate.length>80)throw Error("Select or enter one lake name.");
  const coords=validateCoords(false);
  lake=candidate;db.lakes[lake]={...defaultRecord(),...(db.lakes[lake]||{})};
+ try{localStorage.setItem("restlake:insitu-active-lake:v1",lake)}catch(e){}
  if(coords)db.lakes[lake].coords=coords;
  fillSelect();$("lakeSelect").value=lake;$("otherWrap").hidden=true;
  const prev=db.lakes[lake].coords;$("lat").value=prev?.lat??"";$("lon").value=prev?.lon??"";
@@ -251,6 +252,7 @@ $("saveResults").onclick=()=>{
   mae_before:run.before.mae,mae_after:run.after.mae,
   matching_tolerance_days:Number($("maxDays").value),saved_at:new Date().toISOString()};
  d.results={computed:run,pairs};
+ try{localStorage.setItem("restlake:insitu-active-lake:v1",lake)}catch(e){}
  const stored=persist();refreshSavedValue();refreshFuture();show("calStatus",
  stored?"Lake calibration saved: "+fmt(run.bias)+" °C. All new satellite CSVs for "+lake+" can reuse this value.":"Browser storage is full: download exports and avoid closing the tab.",stored?"success":"warning");
 };
