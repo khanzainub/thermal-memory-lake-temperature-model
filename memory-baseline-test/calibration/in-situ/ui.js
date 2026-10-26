@@ -76,6 +76,9 @@ function selectLake(){
  fillSelect();$("lakeSelect").value=lake;$("otherWrap").hidden=true;
  const prev=db.lakes[lake].coords;$("lat").value=prev?.lat??"";$("lon").value=prev?.lon??"";
  $("workspace").hidden=false;$("selectedLakeLabel").textContent="Selected: "+lake;
+ $("remainingWorkspace").hidden=false;
+ $("chooseLakeHint").hidden=true;
+ for(const id of ["insituUpload","insituDate","insituTemp","upsert","saveObs","downloadInsitu","cancelEdit"])$(id).disabled=false;
  editing=null;syncDownloadLake();renderObs();renderSatellite();syncDateRange();invalidate();
  if(data().calibration && Number.isFinite(data().calibration.bias_c) && data().results?.computed){
    run=data().results.computed;pairs=data().results.pairs||[];

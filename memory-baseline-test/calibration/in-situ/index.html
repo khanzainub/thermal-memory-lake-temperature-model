@@ -14,23 +14,24 @@
 </div>
 <div class="action-row"><button class="button button--primary" type="button" id="chooseLake">Use selected lake</button><span id="selectedLakeLabel" class="file-name"></span></div>
 </section>
-<div id="workspace" hidden>
+<div id="workspace">
 <section class="panel">
-<div class="panel__heading"><div><span class="step">02</span><h2>In-situ observations</h2></div></div>
-<p class="helper">Add measured temperatures for <strong>any dates across multiple years</strong>, even with long gaps. CSV must contain exactly <code>date,insitu_temp_c</code>. Multiple CSV uploads add observations to the same lake, without deleting prior dates. Edit or delete individual rows as needed.</p>
-<div class="action-row"><label class="button button--secondary">Upload in-situ CSV<input id="insituUpload" class="hidden-input" type="file" accept=".csv,text/csv"></label>
+<div class="panel__heading"><div><span class="step">02</span><h2>Upload In-Situ CSV or enter observations</h2></div></div>
+<p id="chooseLakeHint" class="status-box status-box--neutral">First choose a lake above, then upload your In-Situ CSV or enter date and temperature values.</p><p class="helper">Add measured temperatures for <strong>any dates across multiple years</strong>, even with long gaps. CSV must contain exactly <code>date,insitu_temp_c</code>. Multiple CSV uploads add observations to the same lake, without deleting prior dates. Edit or delete individual rows as needed.</p>
+<div class="action-row"><label class="button button--primary" id="inSituUploadLabel">Upload In-Situ CSV (date,insitu_temp_c)<input id="insituUpload" class="hidden-input" type="file" accept=".csv,text/csv" disabled></label>
 <button class="button button--ghost" type="button" id="template">Download CSV template</button>
-<button class="button button--ghost" type="button" id="downloadInsitu">Download saved observations</button></div>
-<div class="insitu-fields"><label>Observation date<input type="date" id="insituDate"></label>
-<label>Measured temperature (°C)<input type="number" id="insituTemp" step="any" placeholder="e.g. 23.5"></label></div>
-<div class="action-row"><button class="button button--secondary" id="upsert" type="button">Add observation</button>
-<button class="button button--ghost" id="cancelEdit" type="button" hidden>Cancel editing</button>
-<button class="button button--primary" id="saveObs" type="button">Save observations</button></div>
+<button class="button button--ghost" type="button" id="downloadInsitu" disabled>Download saved observations</button></div>
+<div class="insitu-fields"><label>Observation date<input type="date" id="insituDate" disabled></label>
+<label>Measured temperature (°C)<input type="number" id="insituTemp" disabled step="any" placeholder="e.g. 23.5"></label></div>
+<div class="action-row"><button class="button button--secondary" id="upsert" type="button" disabled>Add observation</button>
+<button class="button button--ghost" id="cancelEdit" type="button" hidden disabled>Cancel editing</button>
+<button class="button button--primary" id="saveObs" type="button" disabled>Save observations</button></div>
 <p class="helper" id="obsSummary">No observations entered yet.</p>
 <div class="table-wrap"><table><thead><tr><th>Date</th><th>Temperature (°C)</th><th>Actions</th></tr></thead>
 <tbody id="observations"></tbody></table></div>
 <div class="status-box status-box--neutral" role="status" id="obsStatus">Add or upload observations, then save.</div>
 </section>
+<div id="remainingWorkspace" hidden>
 <section id="downloadArea">
 <div class="panel download-header"><div class="panel__heading"><div><span class="step">03</span><h2>Satellite LST download · ±1 month</h2></div></div>
 <p class="helper">Measurements can come from <strong>different months and years</strong> (for example, October 2018, April 2019, June 2022 and October 2025). The available in-situ dates automatically create separate ±1-month satellite-search windows; only overlapping windows are combined. Select each search period, download its satellite CSV using the <strong>unchanged Colab workflow</strong> below, and import each result. Intervening years are <strong>not</strong> downloaded unnecessarily.</p>
@@ -104,7 +105,7 @@
 <button type="button" id="sendToModels" class="button button--secondary">Use calibrated CSV in With Memory &amp; Baseline</button></div>
 <div id="futureStatus" class="status-box status-box--neutral">Save a lake calibration value, then upload any later original satellite CSV.</div>
 <div id="futureMetrics" class="insitu-metrics"></div>
-</section></div></main>
+</section></div></div></main>
 <script src="core.js"></script>
 <script src="lake-data-ui.js?v=source-unchanged"></script>
 <script src="ui.js"></script>

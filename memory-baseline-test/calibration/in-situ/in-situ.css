@@ -13,3 +13,10 @@
 #lakeDataRows .lake-data-row button{display:none!important}
 .insitu-shell .status-box{margin:10px 0}.insitu-shell .button{position:relative;cursor:pointer}
 @media(max-width:650px){.insitu-shell{padding:0 2px}.insitu-fields{grid-template-columns:1fr 1fr;gap:9px}.insitu-fields label{font-size:12px}.insitu-fields input,.insitu-fields select{font-size:13px}.insitu-shell .panel{padding:14px}.insitu-metrics{grid-template-columns:repeat(2,1fr)}}
+
+/* Show the upload workflow from initial load, but require lake selection first. */
+#inSituUploadLabel{display:inline-flex;align-items:center;white-space:normal;max-width:100%;font-weight:700}
+#inSituUploadLabel:has(input:disabled){opacity:.6;cursor:not-allowed}
+#chooseLakeHint{margin:8px 0 14px}
+#remainingWorkspace[hidden]{display:none!important}
+.insitu-shell input:disabled,.insitu-shell button:disabled{opacity:.55;cursor:not-allowed}

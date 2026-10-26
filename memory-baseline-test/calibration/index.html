@@ -30,7 +30,7 @@
           
         </div>
       </div>
-    </header><main class="container"><section class="panel lake-data-panel" aria-labelledby="lakeDataTitle">
+    </header><main class="container"><section class="panel lake-data-panel" id="sharedModelDownload" aria-labelledby="lakeDataTitle">
         <details id="lakeDataDetails">
           <summary><span class="step">DATA</span><span id="lakeDataTitle">Get lake data with Google Colab</span></summary>
           <p class="helper">Enter multiple lakes here. Download a ready-to-run notebook, sign in on Google Colab, run it, and import its result file below. Each lake keeps its own daily CSV in the model's existing format.</p>
@@ -58,8 +58,8 @@
           <div id="lakeDataResults" class="lake-data-results"></div>
         </details>
       </section>
-<section class="panel"><div class="panel__heading"><div><span class="step">INPUT</span><h2>One dataset · Two independent models</h2></div></div>
-<p class="helper">Use the unchanged Colab data download above, or upload the original ReST-Lake model-input CSV. Data, dates and observed LST values are identical for both tabs.</p>
+<section class="panel" id="sharedModelInput"><div class="panel__heading"><div><span class="step">MODEL INPUT</span><h2>With Memory &amp; Baseline — satellite model-input CSV</h2></div></div>
+<p class="helper">Only for With Memory and Baseline: download the original five-column satellite/weather CSV above, or upload one you already have. To upload <code>date,insitu_temp_c</code>, choose the In-Situ Calibration tab.</p>
 <div class="shared-upload"><label class="button button--primary">Upload model-input CSV<input id="sharedCsv" type="file" accept=".csv,text/csv"></label><span id="sharedFile">No CSV loaded</span></div>
 <div id="sharedStatus" class="status-box status-box--neutral" role="status">Download or choose a CSV, then run the two models separately.</div></section>
 <section id="compareModels" class="panel comparison"><div class="panel__heading"><div><span class="step">TEST</span><h2>With Memory vs Baseline</h2></div></div>
