@@ -1,0 +1,94 @@
+.insitu-shell{max-width:1180px;margin:0 auto;padding:0 12px 24px}
+.insitu-shell .panel{margin-bottom:16px}.insitu-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px;margin:14px 0}
+.insitu-fields label{font-size:13px;font-weight:650;color:#24546b}.insitu-fields input,.insitu-fields select{box-sizing:border-box;width:100%;padding:10px;border-radius:9px;border:1px solid #bdd4dc;margin-top:7px;color:#203e53;background:#fff;font-size:14px}
+.hidden-input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}[hidden]{display:none!important}
+.insitu-shell table td,.insitu-shell table th{padding:8px 10px;font-size:12px;white-space:nowrap}
+.insitu-shell td button{font-size:12px;padding:4px 8px}.insitu-shell .table-wrap{overflow:auto}.insitu-table{max-height:350px;overflow-y:auto}
+.insitu-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0}
+.graph-container{padding:10px;background:#f8fbff;border:1px solid #d8e5ed;border-radius:12px;overflow-x:auto;min-height:210px}.graph-container svg{min-width:640px;width:100%;height:auto;display:block}
+.download-header{margin-bottom:0!important}.lake-data-panel{margin-top:0!important}
+.lake-data-panel #lakeDataResults .action-row button:not(:first-child){display:none!important}
+.lake-data-panel #addLakeDataRow{display:none!important}
+#lakeDataRows .lake-data-row:not(:first-child){display:none!important}
+#lakeDataRows .lake-data-row button{display:none!important}
+.insitu-shell .status-box{margin:10px 0}.insitu-shell .button{position:relative;cursor:pointer}
+@media(max-width:650px){.insitu-shell{padding:0 2px}.insitu-fields{grid-template-columns:1fr 1fr;gap:9px}.insitu-fields label{font-size:12px}.insitu-fields input,.insitu-fields select{font-size:13px}.insitu-shell .panel{padding:14px}.insitu-metrics{grid-template-columns:repeat(2,1fr)}}
+
+/* Show the upload workflow from initial load, but require lake selection first. */
+#inSituUploadLabel{display:inline-flex;align-items:center;white-space:normal;max-width:100%;font-weight:700}
+#inSituUploadLabel:has(input:disabled){opacity:.6;cursor:not-allowed}
+#chooseLakeHint{margin:8px 0 14px}
+#remainingWorkspace[hidden]{display:none!important}
+.insitu-shell input:disabled,.insitu-shell button:disabled{opacity:.55;cursor:not-allowed}
+
+/* Calibration uses any lake name, observation dates and temperatures; no coordinates. */
+.lake-name-only{grid-template-columns:minmax(0,420px)}
+
+@media(max-width:650px){.lake-name-only{grid-template-columns:minmax(0,1fr)}}
+
+/* Coordinates belong only inside satellite acquisition. The original
+   downloader still receives the required coordinates internally. */
+#downloadArea{display:block}
+#lakeDataRows .lake-data-row label:has(input[name="lat"]),
+#lakeDataRows .lake-data-row label:has(input[name="lon"]),
+#lakeDataRows .lake-data-row label:has(input[name="name"]){display:none!important}
+#lakeDataForm .subpanel{display:none!important}
+#advancedFutureArea{display:none!important}
+.insitu-shell .table-wrap:has(#observations){max-height:280px;overflow-y:auto}
+@media(max-width:650px){#downloadArea .insitu-fields{grid-template-columns:1fr}}
+
+/* Calibration-only upload layout; the model tabs and scientific functions are untouched. */
+.calibration-upload-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 20px}
+.calibration-upload-card{min-width:0;border:1px solid #cbdde7;background:#f8fbfd;border-radius:13px;padding:14px}
+.calibration-upload-card h3{margin:0 0 7px;font-size:16px;line-height:1.3}
+.calibration-upload-card .helper{margin:5px 0 10px;line-height:1.5}
+.calibration-upload-card .action-row{display:flex;flex-direction:column;align-items:stretch;gap:7px;margin:10px 0}
+.calibration-upload-card .action-row .button{display:flex;justify-content:center;align-items:center;width:100%;max-width:100%;box-sizing:border-box;text-align:center;white-space:normal;line-height:1.35;padding:9px 10px}
+.calibration-upload-card .file-name{display:block;overflow-wrap:anywhere;font-size:12px;line-height:1.5;margin:7px 0}
+.calibration-download-link{font-weight:700;text-decoration:underline;text-underline-offset:2px}
+#satelliteUploadLabel:has(input:disabled){opacity:.6;cursor:not-allowed}
+#downloadArea{margin-top:8px;padding-top:12px;border-top:2px solid #d8e4ed}
+#downloadArea .download-header{background:#f5f9fc}
+@media(max-width:650px){.calibration-upload-grid{gap:8px}.calibration-upload-card{padding:10px;border-radius:11px}.calibration-upload-card h3{font-size:14px}.calibration-upload-card .helper{font-size:11px}.calibration-upload-card .action-row .button{font-size:11px;padding:8px 6px}}
+@media(max-width:340px){.calibration-upload-grid{grid-template-columns:1fr}}
+
+/* Collapsed-by-default optional satellite acquisition (in-situ calibration only). */
+#downloadArea.calibration-download-details{padding-top:0;margin:12px 0 16px;border:1px solid #cbdde7;border-radius:13px;overflow:hidden;background:#f8fbfd}
+#downloadArea>.calibration-download-summary{cursor:pointer;display:flex;align-items:center;gap:8px;padding:13px 16px;font-size:16px;font-weight:700;color:#24546b;line-height:1.4;list-style-position:inside;user-select:none}
+#downloadArea>.calibration-download-summary small{font-size:12px;color:#526c7c;font-weight:500}
+#downloadArea[open]>.calibration-download-summary{border-bottom:1px solid #d8e4ed;background:#eff6fb}
+#downloadArea>.panel{margin:10px 12px!important}
+#downloadArea .download-header{border:0;box-shadow:none}
+@media(max-width:650px){#downloadArea>.calibration-download-summary{font-size:14px;padding:12px}#downloadArea>.panel{margin:8px!important}}
+
+/* Clean calibration-only experience; keep existing downloader and scientific functions. */
+#downloadArea .lake-data-dates{display:none!important}
+#lakeDataResults{display:none!important}
+#downloadArea .lake-data-panel{padding:8px 12px!important}
+#downloadArea .lake-data-panel .action-row{gap:8px}
+#downloadArea .download-header{padding:10px 12px 0!important;margin:0!important}
+#downloadArea>.calibration-download-summary{min-height:40px}
+#matches tr{cursor:pointer;transition:background-color .12s}
+#matches tr.is-selected{background:#d9ebfa!important;outline:2px solid #327ab0;outline-offset:-2px}
+#matches tr:focus-visible{outline:2px solid #327ab0;outline-offset:-2px}
+#matches button{padding:5px 10px;font-size:12px}
+#matches input[type=number]{width:90px;max-width:100%;padding:5px;border:1px solid #6c9dbc;border-radius:6px;background:#fff;color:#234;box-sizing:border-box}
+#insituPlot circle[data-obs-date]{cursor:pointer;outline:none}
+#insituPlot circle.is-selected{stroke:#17314c!important;stroke-width:3!important}
+#insituPlot circle[data-obs-date]:focus-visible{stroke:#17314c;stroke-width:3}
+@media(max-width:650px){#downloadArea .lake-data-panel .action-row{display:flex;flex-wrap:wrap}#matches input[type=number]{width:74px}}
+
+/* All satellite windows are downloaded by a single Colab notebook.
+   Preserve the existing in-situ data table, graphs and bias results. */
+#downloadArea #windowSelect{display:none!important}
+#downloadArea .lake-data-dates{display:none!important}
+#downloadArea #lakeDataRows{display:none!important}
+#downloadArea .lake-data-import,#downloadArea #lakeDataResults{display:none!important}
+#downloadArea #addLakeDataRow{display:none!important}
+
+/* In-situ Colab download is always Daily; do not show irrelevant frequencies. */
+#lakeDataForm > [role="tablist"]{display:none!important}
+
+/* All windows are shown as non-selectable informational rows; there is no one-at-a-time selector. */
+.all-windows-list ul{margin:8px 0 12px;padding-left:21px;display:grid;gap:6px}
+.all-windows-list li{font-size:13px;line-height:1.5;color:#375e70}
