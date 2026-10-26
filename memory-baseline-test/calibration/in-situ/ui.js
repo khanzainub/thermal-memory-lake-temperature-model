@@ -39,16 +39,33 @@ function syncDownloadLake(){
 }
 function syncDateRange(){
  if(!lake)return;
- const span=C.span(data().saved.length?data().saved:data().draft);
- if(!span){show("rangeInfo","Save in-situ observations to determine the satellite date range.","neutral");return}
- const cap=maxAvailable();
- $("lakeDataStart").value=span.start;$("lakeDataEnd").value=span.end>cap?cap:span.end;
- if(span.start>cap){
-   show("rangeInfo","All requested observations occur after the original downloader's latest allowed date ("+cap+"). Download is not available for this range.","warning");
- }else if(span.end>cap){
-   show("rangeInfo","Synced "+span.start+" to "+span.end+" (±1 calendar month). Download end is limited to "+cap+" by the original 10-day data lag.","warning");
- }else show("rangeInfo","Automatically synced search dates: "+span.start+" → "+span.end+" (±1 calendar month).","success");
+ const observations=data().saved.length?data().saved:data().draft;
+ const windows=C.searchWindows(observations),picker=$("windowSelect"),previous=picker.value;
+ picker.replaceChildren();
+ if(!windows.length){
+   picker.add(new Option("No observation dates saved",""));
+   $("windowSummary").textContent="Save real in-situ observation dates to prepare satellite download periods.";
+   show("rangeInfo","Save observation dates before preparing the satellite download.","neutral");return;
+ }
+ windows.forEach((w,i)=>picker.add(new Option((i+1)+". "+w.start+" → "+w.end+" ("+w.observation_count+" in-situ date"+(w.observation_count===1?"":"s")+")",String(i))));
+ const i=previous!==""&&Number.isInteger(Number(previous))&&Number(previous)>=0&&Number(previous)<windows.length?Number(previous):0;
+ picker.value=String(i);
+ $("windowSummary").textContent=windows.length+" separate satellite search period"+(windows.length===1?"":"s")+" for "+observations.length+" in-situ dates in "+[...new Set(observations.map(r=>r.date.slice(0,4)))].sort().join(", ")+". Download/import each period separately. Gaps between available observations are not included.";
+ setActiveWindow();
 }
+function setActiveWindow(){
+ if(!lake)return;
+ const windows=C.searchWindows(data().saved.length?data().saved:data().draft),index=Number($("windowSelect").value||0),w=windows[index];
+ if(!w)return;
+ const cap=maxAvailable();
+ $("lakeDataStart").value=w.start;$("lakeDataEnd").value=w.end>cap?cap:w.end;
+ const msg="Window "+(index+1)+"/"+windows.length+": "+w.start+" to "+w.end+" (±1 calendar month around "+w.observation_count+" in-situ date"+(w.observation_count===1?"":"s")+"). ";
+ if(w.start>cap)show("rangeInfo",msg+"Outside the original downloader's available dates (last allowable "+cap+").","warning");
+ else if(w.end>cap)show("rangeInfo",msg+"Download end capped at "+cap+" by original source availability.","warning");
+ else show("rangeInfo",msg+"The original Colab download controls below are synced to this interval.","success");
+}
+$("windowSelect").addEventListener("change",setActiveWindow);
+
 function invalidate(){pairs=[];run=null;$("matches").replaceChildren();$("metrics").replaceChildren();$("graph").replaceChildren();show("matchStatus","Data changed. Match dates again to update the audit.","neutral");show("calStatus","Apply correction after matching dates.","neutral");}
 function selectLake(){
  let candidate=$("lakeSelect").value;if(candidate==="__other__")candidate=$("otherName").value.trim();
@@ -98,11 +115,24 @@ $("upsert").onclick=()=>{try{
  }catch(e){show("obsStatus",e.message,"danger")}};
 $("cancelEdit").onclick=()=>{editing=null;$("insituDate").value="";$("insituTemp").value="";$("upsert").textContent="Add observation";$("cancelEdit").hidden=true};
 $("insituUpload").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;
- try{if(f.size>5000000)throw Error("Maximum in-situ CSV file is 5 MB.");data().draft=C.inSituCSV(await f.text());editing=null;renderObs();invalidate();show("obsStatus","Uploaded "+data().draft.length+" observations into the draft. Save to retain them.","success")}
+ try{
+ if(f.size>5000000)throw Error("Maximum in-situ CSV file is 5 MB.");
+ const incoming=C.inSituCSV(await f.text()),all=new Map((data().draft||[]).map(row=>[row.date,row]));
+ for(const row of incoming){
+   if(all.has(row.date)&&Math.abs(all.get(row.date).insitu_temp_c-row.insitu_temp_c)>1e-9)throw Error("Conflicting in-situ temperature for "+row.date+". Use Edit to change the existing observation.");
+   all.set(row.date,row);
+ }
+ data().draft=C.validateInSitu([...all.values()]);
+ editing=null;renderObs();invalidate();
+ show("obsStatus","Added "+incoming.length+" rows, retaining "+data().draft.length+" distinct in-situ dates across all years. Click Save observations.","success");
+}
  catch(err){show("obsStatus",err.message,"danger")}finally{e.target.value=""}};
 $("saveObs").onclick=()=>{
- try{if(!data().draft.length)throw Error("Add at least one valid observation.");data().saved=C.validateInSitu(data().draft);data().results=null;data().calibration=null;
- const stored=persist();syncDateRange();renderObs();invalidate();refreshSavedValue();refreshFuture();renderPlot();show("obsStatus",stored?"Saved "+data().saved.length+" in-situ observations for "+lake+".":"Saved in this session, but browser storage is full; download a backup.",stored?"success":"warning")}
+ try{if(!data().draft.length)throw Error("Add at least one valid observation.");
+ const newlySaved=C.validateInSitu(data().draft),changed=JSON.stringify(newlySaved)!==JSON.stringify(data().saved);
+ data().saved=newlySaved;
+ if(changed){data().results=null;data().calibration=null;}
+ const stored=persist();syncDateRange();renderObs();if(changed)invalidate();refreshSavedValue();refreshFuture();renderPlot();show("obsStatus",stored?"Saved "+data().saved.length+" in-situ observations for "+lake+".":"Saved in this session, but browser storage is full; download a backup.",stored?"success":"warning")}
  catch(e){show("obsStatus",e.message,"danger")}};
 $("template").onclick=()=>csvDownload("date,insitu_temp_c\n", "insitu_template.csv");
 $("downloadInsitu").onclick=()=>{if(!data().saved.length){show("obsStatus","Save observations first.","warning");return}
