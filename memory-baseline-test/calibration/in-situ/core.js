@@ -34,9 +34,18 @@ function validateInSitu(obs){
  used.add(row.date);return {date:row.date,insitu_temp_c:t}
  }).sort((a,b)=>a.date.localeCompare(b.date));
 }
-function inSituCSV(text){const parsed=parseCSV(text);
- if(parsed.headers.join(",")!=="date,insitu_temp_c")throw Error('In-situ CSV must have columns "date,insitu_temp_c".');
- return validateInSitu(parsed.rows)}
+function inSituCSV(text,selectedLake=""){const parsed=parseCSV(text);
+ const optional=new Set(["index","Unnamed: 0","lake_name"]),required=["date","insitu_temp_c"];
+ if(required.some(h=>!parsed.headers.includes(h))||parsed.headers.some(h=>!required.includes(h)&&!optional.has(h)))
+   throw Error('In-situ CSV must contain date and insitu_temp_c. Optional index and lake_name columns are accepted.');
+ if(selectedLake&&parsed.headers.includes("lake_name")){
+   for(const row of parsed.rows){
+     const name=row.lake_name.trim();
+     if(name&&name.toLocaleLowerCase()!==selectedLake.toLocaleLowerCase())
+       throw Error('CSV lake_name "'+name+'" does not match selected lake "'+selectedLake+'".');
+   }
+ }
+ return validateInSitu(parsed.rows.map(row=>({date:row.date,insitu_temp_c:row.insitu_temp_c})))}
 const HEADER="date,air_temp_c,shortwave_w_m2,wind_speed_m_s,observed_lst_c";
 function satelliteCSV(text){const {headers,rows}=parseCSV(text);if(headers.join(",")!==HEADER)throw Error("Use the original five-column satellite model-input CSV format.");
  const used=new Set();return rows.map(r=>{toDate(r.date);if(used.has(r.date))throw Error("Duplicate satellite date: "+r.date);used.add(r.date);
