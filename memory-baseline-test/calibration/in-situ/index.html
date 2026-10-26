@@ -5,7 +5,7 @@
 <body><main class="insitu-shell">
 <section class="panel">
 <div class="panel__heading"><div><span class="step">01</span><h2>Select lake</h2></div></div>
-<p class="helper">Choose a lake before adding field temperatures. Observations and bias corrections are stored separately for each lake in this browser.</p>
+<p class="helper">Choose a lake before adding field temperatures. Each lake gets one saved calibration offset (°C). Apply that same offset to later satellite observations.</p>
 <div class="insitu-fields">
 <label>Lake<select id="lakeSelect"><option value="">Select a lake…</option></select></label>
 <label id="otherWrap" hidden>Custom lake name<input id="otherName" type="text" maxlength="80" placeholder="Enter lake name"></label>
@@ -65,7 +65,7 @@
       </section>
 </section>
 <section class="panel">
-<div class="panel__heading"><div><span class="step">04</span><h2>Load satellite LST &amp; match dates</h2></div></div>
+<div class="panel__heading"><div><span class="step">04</span><h2>Match historical satellite and in-situ dates</h2></div></div>
 <p class="helper">Import the downloaded <code>lake_data_results.json</code> using the original control above, or import a single original five-column lake CSV. Only observed satellite temperatures are matched; absent observations are kept missing.</p>
 <div class="action-row">
 <label class="button button--secondary">Upload satellite model-input CSV<input id="satUpload" class="hidden-input" type="file" accept=".csv,text/csv"></label>
@@ -78,11 +78,11 @@
 <tbody id="matches"></tbody></table></div>
 </section>
 <section class="panel">
-<div class="panel__heading"><div><span class="step">05</span><h2>Apply additive bias correction</h2></div></div>
-<p class="helper"><strong>Method:</strong> <code>bias = mean(T_in-situ − T_satellite)</code> over earlier calibration matches; <code>corrected LST = original satellite LST + bias</code> on existing satellite observations only. When at least three pairs are available, the earliest 70% are used to determine the correction, with later matched pairs held out for a separate assessment. Fewer pairs are exploratory only. Different measurement dates can reflect real temperature variability; inspect the date differences.</p>
-<div class="action-row"><button type="button" id="applyBias" class="button button--primary">Apply Bias Correction / Calibrate</button>
-<button type="button" id="saveResults" class="button button--secondary">Save results</button></div>
-<div id="metrics" class="insitu-metrics"></div><div class="status-box status-box--neutral" id="calStatus">Match the dates and apply correction to view results.</div>
+<div class="panel__heading"><div><span class="step">05</span><h2>Calculate and save lake calibration value</h2></div></div>
+<p class="helper"><strong>One reusable value per lake:</strong> Mean bias = average of (in-situ temperature − satellite LST) across all matched historical observations. A value estimated from 2018 can be saved and applied to later years without recalculating it, assuming the sensor and systematic bias remain stable. <code>Corrected satellite LST = original satellite LST + saved bias (°C)</code>. No missing dates are filled. Different measurement dates can represent actual temperature change.</p>
+<div class="action-row"><button type="button" id="applyBias" class="button button--primary">Calculate lake bias</button>
+<button type="button" id="saveResults" class="button button--secondary">Save calibration value</button></div>
+<div id="metrics" class="insitu-metrics"></div><div id="savedValue" class="status-box status-box--neutral">No saved calibration value yet.</div><div class="status-box status-box--neutral" id="calStatus">Match historical dates to calculate the bias value.</div>
 <h3>Original satellite LST · In-situ measurements · Bias-corrected satellite LST</h3>
 <div class="graph-container" id="graph"></div>
 <p class="helper">Individual dots are observed samples. Dashed connectors identify matched dates and show their differences. Missing observations are not interpolated.</p>
@@ -92,6 +92,15 @@
 <button class="button button--ghost" type="button" id="exportMetrics">Download metrics CSV</button>
 <button class="button button--ghost" type="button" id="exportPlot">Download plot SVG</button>
 </div>
+</section>
+<section class="panel">
+<div class="panel__heading"><div><span class="step">06</span><h2>Correct later satellite data using the saved value</h2></div></div>
+<p class="helper">For example, calculate the bias from matched observations in October 2018, then upload satellite observations from 2019, 2020 or later. The same stored additive offset will be applied to every <em>existing</em> satellite LST value. The five-column model-input CSV format is retained. No new in-situ measurements or recalibration are required.</p>
+<div class="action-row"><label class="button button--primary">Upload new / later satellite CSV<input class="hidden-input" id="futureUpload" type="file" accept=".csv,text/csv"></label>
+<button type="button" id="downloadFuture" class="button button--secondary">Download calibrated satellite CSV</button>
+<button type="button" id="sendToModels" class="button button--secondary">Use calibrated CSV in With Memory &amp; Baseline</button></div>
+<div id="futureStatus" class="status-box status-box--neutral">Save a lake calibration value, then upload any later original satellite CSV.</div>
+<div id="futureMetrics" class="insitu-metrics"></div>
 </section></div></main>
 <script src="core.js"></script>
 <script src="lake-data-ui.js?v=source-unchanged"></script>
