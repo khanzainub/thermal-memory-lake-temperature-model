@@ -343,6 +343,7 @@ $("exportMetrics").onclick=()=>guarded(()=>{
 $("exportPlot").onclick=()=>guarded(()=>{const svg=$("insituPlot");if(!svg)throw Error("No plot to export.");
  csvDownload(new XMLSerializer().serializeToString(svg),safeName()+"_in_situ_calibration_plot.svg","image/svg+xml")});
 $("lakeDataBundle").addEventListener("change",async e=>{
+ if(lake){e.preventDefault();e.stopImmediatePropagation();}
  const file=e.target.files?.[0];if(!file||!lake)return;
  try{const obj=JSON.parse(await file.text());
  if(obj.format!=="lake-thermal-memory-data-v1"||obj.frequency!=="Daily"||!Array.isArray(obj.lakes))throw Error("Import the original Daily Colab result bundle.");
@@ -350,19 +351,19 @@ $("lakeDataBundle").addEventListener("change",async e=>{
  if(!selected)throw Error("The imported bundle does not contain the selected lake: "+lake);
  if(typeof selected.csv!=="string"||selected.csv.length>15000000)throw Error("Selected lake CSV is missing or too large.");
  const name=selected.filename||"Colab: "+lake;
- if(data().calibration){
-   loadLaterCSV(selected.csv,name);
-   show("futureStatus","Imported the new Colab satellite data and automatically applied saved "+lake+" bias. Download corrected CSV or use it in both models.","success");
- }else{
-   applySatelliteCSV(selected.csv,name);
-   show("matchStatus","Imported historical satellite observations for "+lake+". Now match the saved in-situ temperatures.","success");
- }
+ applySatelliteCSV(selected.csv,name);
+ show("matchStatus","This historical satellite window has been merged into the lake archive. Continue other periods or match all observed dates.","success");
+
  }catch(e){show("matchStatus",e.message,"danger")}
+ finally{e.target.value="";}
  },{capture:true});
 $("prepareLakeNotebook").addEventListener("click",e=>{
  try{if(!lake)throw Error("Select a lake first.");validateCoords(true);syncDownloadLake();
  if(!data().saved.length)throw Error("Save in-situ observations before preparing satellite dates.");
- const span=C.span(data().saved);if(span.start>maxAvailable())throw Error("Selected dates are later than the satellite provider's available range.");
+ setActiveWindow();
+ const w=C.searchWindows(data().saved)[Number($("windowSelect").value||0)];
+ if(!w)throw Error("No satellite window selected.");
+ if(w.start>maxAvailable())throw Error("Selected satellite window is beyond the original downloader's supported end date.");
  }catch(err){e.preventDefault();e.stopImmediatePropagation();show("rangeInfo",err.message,"danger")}
  },{capture:true});
 })();
