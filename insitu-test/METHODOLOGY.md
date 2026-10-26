@@ -26,7 +26,7 @@ In-situ dates must be real ISO dates, YYYY-MM-DD. Duplicate dates in the same la
 
 ## Matching and bias correction
 
-For each calibration in-situ date, choose the temporally nearest valid original satellite observation of the selected lake, subject to the selected maximum separation. Exact dates win. Equal-distance satellite ties select the earlier satellite date and are flagged. If multiple in-situ observations choose the same satellite record, retain the pair with the smallest separation (then earliest in-situ date); flag the others rather than force alternative matches. Excluding a winning pair does not silently promote a duplicate. A nearest match across the chronological boundary is flagged and is not used for correction.
+For each in-situ date, choose the temporally nearest valid original satellite observation of the selected lake, subject to the selected maximum separation. Exact dates win. Equal-distance satellite ties select the earlier satellite date and are flagged. If multiple in-situ observations choose the same satellite record, retain the pair with the smallest separation (then earliest in-situ date); flag the others rather than force alternative matches. Excluding a winning pair does not silently promote a duplicate. A calibration in-situ observation whose nearest satellite match crosses the chronological boundary is flagged and is not used for correction. Later in-situ matches are shown for inspection only, labeled withheld validation and never selectable for correction.
 
 For accepted pair j:
 

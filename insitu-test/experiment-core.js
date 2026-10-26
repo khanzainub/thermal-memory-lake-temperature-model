@@ -41,12 +41,14 @@ const ReSTExperiment = (() => {
     const pairs=observations.map(o=>{
       const eligible=sat;
       const p={...o,id:o.date,status:'unmatched',satellite_date:'',satellite_index:null,delta_days:null,bias_c:null,tie:false};
-      if(o.date>cutoff){p.status='withheld validation';return p;}
+      const withheld=o.date>cutoff;
+      if(withheld)p.status='withheld validation';
       const distances=eligible.map(s=>({s,delta:Math.abs(date(o.date)-s.date)/DAY})).sort((a,b)=>a.delta-b.delta||a.s.date-b.s.date);
       if(!distances.length||distances[0].delta>maxDays)return p;
       const {s,delta}=distances[0];
       Object.assign(p,{satellite_date:iso(s.date),satellite_index:s.i,satellite_lst_c:s.observed_lst_c,delta_days:delta,signed_delta_days:(date(o.date)-s.date)/DAY,bias_c:o.insitu_temp_c-s.observed_lst_c,tie:distances.length>1&&distances[1].delta===delta,status:'accepted'});
-      if(p.satellite_date>cutoff)p.status='cross-boundary match (not used)';
+      if(withheld)p.status='withheld validation';
+      else if(p.satellite_date>cutoff)p.status='cross-boundary match (not used)';
       return p;
     });
     const used=new Set();
