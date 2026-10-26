@@ -51,3 +51,12 @@
 #downloadArea .download-header{background:#f5f9fc}
 @media(max-width:650px){.calibration-upload-grid{gap:8px}.calibration-upload-card{padding:10px;border-radius:11px}.calibration-upload-card h3{font-size:14px}.calibration-upload-card .helper{font-size:11px}.calibration-upload-card .action-row .button{font-size:11px;padding:8px 6px}}
 @media(max-width:340px){.calibration-upload-grid{grid-template-columns:1fr}}
+
+/* Collapsed-by-default optional satellite acquisition (in-situ calibration only). */
+#downloadArea.calibration-download-details{padding-top:0;margin:12px 0 16px;border:1px solid #cbdde7;border-radius:13px;overflow:hidden;background:#f8fbfd}
+#downloadArea>.calibration-download-summary{cursor:pointer;display:flex;align-items:center;gap:8px;padding:13px 16px;font-size:16px;font-weight:700;color:#24546b;line-height:1.4;list-style-position:inside;user-select:none}
+#downloadArea>.calibration-download-summary small{font-size:12px;color:#526c7c;font-weight:500}
+#downloadArea[open]>.calibration-download-summary{border-bottom:1px solid #d8e4ed;background:#eff6fb}
+#downloadArea>.panel{margin:10px 12px!important}
+#downloadArea .download-header{border:0;box-shadow:none}
+@media(max-width:650px){#downloadArea>.calibration-download-summary{font-size:14px;padding:12px}#downloadArea>.panel{margin:8px!important}}
