@@ -22,7 +22,7 @@ function chooseBias(filename,frameIndex) {
  if(!available.length)throw Error("No saved in-situ bias yet. Calculate and save it in In-Situ Calibration.");
  const selected=localStorage.getItem(ACTIVE);
  const record=available.find(x=>x.lake===selected);
- const stem=normalize(String(filename).replace(/\\.csv$/i,""));
+ const stem=normalize(String(filename).replace(/\.csv$/i,""));
  const named=available.filter(c=>stem===normalize(c.lake)||stem.startsWith(normalize(c.lake)+"_"))
   .sort((a,b)=>normalize(b.lake).length-normalize(a.lake).length);
  const chosen=named[0]||record;
@@ -78,6 +78,7 @@ function interceptUploads(frame){
  const decide=(file,application,event)=>{
    if(!file)return false;
    if(!checkboxes[frames.indexOf(frame)].checked)return false; // OFF: unchanged native uploader.
+   if(alreadyCorrected(file.name))return false; // Pre-corrected CSV: original loader, no double correction.
    event.preventDefault();event.stopImmediatePropagation();
    try{
      const choice=chooseBias(file.name,frames.indexOf(frame));
