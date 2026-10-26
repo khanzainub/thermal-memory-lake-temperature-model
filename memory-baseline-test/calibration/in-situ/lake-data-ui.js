@@ -112,80 +112,92 @@
   listActions.append(listLabel, demo); listPanel.append(listTitle, listHint, listActions); rows.before(listPanel);
 
   function getConfig() {
-    const lakes = [...rows.children].map((row,index) => {
-      const name = row.querySelector('[name="name"]').value.trim();
-      const latText = row.querySelector('[name="lat"]').value.trim(), lonText = row.querySelector('[name="lon"]').value.trim();
-      const lat = Number(latText), lon = Number(lonText);
-      if (!name || !latText || !lonText || !Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lon) || lon < -180 || lon > 180) throw new Error('Enter a name and valid coordinates for every lake.');
-      return {name, lat, lon, file_stem: name.replace(/[^a-zA-Z0-9_-]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'') || `lake_${index+1}`};
-    });
-    if (new Set(lakes.map(l => l.name.toLowerCase())).size !== lakes.length) throw new Error('Use a different name for each lake.');
-    const used = new Set();
-    lakes.forEach(lake => { const base = lake.file_stem; let i=2; while(used.has(lake.file_stem.toLowerCase())) lake.file_stem = `${base}_${i++}`; used.add(lake.file_stem.toLowerCase()); });
-    const start = el('lakeDataStart').value, finish = el('lakeDataEnd').value;
-    if (!start || !finish || start > finish || finish > localDate(end)) throw new Error('Choose a valid date range ending at least 10 days before today.');
-    return {start_date: start, end_date: finish, frequency: dataFrequency, lakes};
+    const name=el('lakeName').value.trim(),active=localStorage.getItem('restlake:insitu-active-lake:v1');
+    if(!name||!active||name.toLowerCase()!==active.toLowerCase())
+      throw new Error('First select the lake using "Use this lake".');
+    const storage=JSON.parse(localStorage.getItem('restlake:insitu-calibration:2026-10-26:v1') || '{}');
+    const item=Object.entries(storage.lakes||{}).find(([k])=>k.toLowerCase()===active.toLowerCase());
+    const observations=item?.[1]?.saved||[];
+    if(!observations.length)throw new Error('Save your in-situ measurements first.');
+    const windows=ReSTInSituCore.searchWindows(observations);
+    if(!windows.length)throw new Error('No satellite download windows found.');
+    const number=s=>String(s).trim().replace(/[,。\u066B\uFF0E]/g,'.').replace(/\s*°\s*$/,'');
+    const a=number(el('satelliteLat').value),b=number(el('satelliteLon').value);
+    const dd=/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
+    if(!dd.test(a)||!dd.test(b)||Math.abs(Number(a))>90||Math.abs(Number(b))>180)
+      throw new Error('Enter latitude and longitude in decimal degrees for satellite download.');
+    const cutoff=localDate(end);
+    if(windows.some(w=>w.start>cutoff||w.end>cutoff))
+      throw new Error('One or more ±1-month satellite windows extend beyond '+cutoff+'. No windows can be silently excluded.');
+    const stem=name.replace(/[^a-zA-Z0-9_-]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'')||'lake';
+    return {lake:{name,lat:Number(a),lon:Number(b),file_stem:stem},
+      windows:windows.map(w=>({start_date:w.start,end_date:w.end,observation_count:w.observation_count})),
+      n_insitu:observations.length,output_name:stem+'_satellite_LST_bias_calibration.csv'};
   }
   const codeCell = source => ({cell_type:'code', execution_count:null, metadata:{}, outputs:[], source});
   function makeNotebook(config, pipeline) {
-    // JSON is treated as data by json.loads, never as interpolated Python code.
-    const setup = `import json\nfrom pathlib import Path\nCONFIG = json.loads(${JSON.stringify(JSON.stringify(config))})\nOUTPUT_DIR = Path("lake_csv_outputs")\nOUTPUT_DIR.mkdir(exist_ok=True)\n`;
-    const run = `
-from datetime import datetime, timezone
-from tempfile import TemporaryDirectory
-from google.colab import files
-catalog = pystac_client.Client.open(
-    'https://planetarycomputer.microsoft.com/api/stac/v1',
-    modifier=planetary_computer.sign_inplace
-)
-bundle = {'format': 'lake-thermal-memory-data-v1', 'frequency': CONFIG.get('frequency', 'Daily'),
-          'start_date': CONFIG['start_date'], 'end_date': CONFIG['end_date'],
-          'created_at': datetime.now(timezone.utc).isoformat(), 'lakes': [], 'errors': []}
-summary = []
-for cfg in CONFIG['lakes']:
-    try:
-        frequency = CONFIG.get('frequency', 'Daily')
-        if frequency == 'Daily':
-            df, path = build_lake_file(cfg['name'], cfg, catalog, CONFIG['start_date'], CONFIG['end_date'], OUTPUT_DIR)
-        else:
-            with TemporaryDirectory(prefix='lake_processing_') as scratch_dir:
-                df, _ = build_lake_file(cfg['name'], cfg, catalog, CONFIG['start_date'], CONFIG['end_date'], Path(scratch_dir))
-        if CONFIG.get('frequency', 'Daily') != 'Daily':
-            period = 'M' if CONFIG['frequency'] == 'Monthly' else 'Y'
-            dates = pd.to_datetime(df['date'])
-            grouped = df.assign(_period=dates.dt.to_period(period)).groupby('_period')
-            columns = ['air_temp_c', 'shortwave_w_m2', 'wind_speed_m_s', 'observed_lst_c']
-            df = grouped[columns].mean().round(3)
-            df.insert(0, 'date', df.index.to_timestamp().strftime('%Y-%m-%d'))
-            df = df.reset_index(drop=True)
-            path = OUTPUT_DIR / (cfg['file_stem'] + '_' + CONFIG['frequency'].lower() + '_model_input.csv')
-            df.to_csv(path, index=False)
-        # Remove only this lake's obsolete generated frequency outputs on reruns.
-        for other_frequency in ('daily', 'monthly', 'yearly'):
-            if other_frequency != frequency.lower():
-                obsolete = OUTPUT_DIR / (cfg['file_stem'] + '_' + other_frequency + '_model_input.csv')
-                obsolete.unlink(missing_ok=True)
-        bundle['lakes'].append({'name': cfg['name'], 'lat': cfg['lat'], 'lon': cfg['lon'],
-            'filename': path.name, 'csv': path.read_text(), 'daily_rows': len(df),
-            'observed_lst_values': int(df['observed_lst_c'].notna().sum())})
-        summary.append({'lake': cfg['name'], 'daily_rows': len(df),
-            'observed_lst_values': int(df['observed_lst_c'].notna().sum()),
-            'start_date': df['date'].min(), 'end_date': df['date'].max()})
-    except Exception as error:
-        print(f"FAILED: {cfg['name']}: {error}")
-        bundle['errors'].append({'name': cfg['name'], 'message': str(error)})
-print('\\nFINAL SUMMARY')
-print(pd.DataFrame(summary).to_string(index=False) if summary else 'No lake completed successfully.')
-result_path = OUTPUT_DIR / 'lake_data_results.json'
-result_path.write_text(json.dumps(bundle, ensure_ascii=False), encoding='utf-8')
-print('\\nReturn to the model and import lake_data_results.json.')
-files.download(str(result_path))
-# The separate CSV files also remain in lake_csv_outputs in the Colab Files panel.
-`;
-    return {nbformat:4, nbformat_minor:5, metadata:{colab:{name:'Lake_data_download.ipynb',provenance:[]},kernelspec:{display_name:'Python 3',name:'python3'},language_info:{name:'python'}}, cells:[
-      {cell_type:'markdown',metadata:{},source:'# Lake data for the thermal-memory model\n\nYour lakes and dates are already configured. Sign in to Google Colab and choose **Runtime → Run all**. At completion, allow the result download, return to the model and import **lake_data_results.json**. Each lake retains its separate CSV.\n\nThis uses the supplied ERA5 + Landsat pipeline: daily means in Asia/Kolkata, Landsat 8/9 scene cloud <2%, exact pixel sampling, the original temperature conversion, same-date mean and three-decimal rounding. There is no additional QA, water-mask, temperature-range or interpolation filter. A low scene cloud percentage alone does not establish pixel quality.\n'},
+    const setup='import json\nfrom pathlib import Path\nCONFIG=json.loads('+
+      JSON.stringify(JSON.stringify(config))+')\nOUTPUT_DIR=Path("lake_csv_outputs")\nOUTPUT_DIR.mkdir(exist_ok=True)\n';
+    const run=[
+      'from tempfile import TemporaryDirectory',
+      'from google.colab import files',
+      'catalog = pystac_client.Client.open("https://planetarycomputer.microsoft.com/api/stac/v1", modifier=planetary_computer.sign_inplace)',
+      'cfg = CONFIG["lake"]',
+      'windows = CONFIG["windows"]',
+      'frames = []',
+      'failures = []',
+      'print("Satellite windows:", len(windows), "Lake:", cfg["name"])',
+      'for index, window in enumerate(windows, 1):',
+      '    start, stop = window["start_date"], window["end_date"]',
+      '    print("Window", index, "of", len(windows), ":", start, "to", stop)',
+      '    for attempt in range(1, 4):',
+      '        try:',
+      '            with TemporaryDirectory(prefix="rest_lake_satellite_") as temp_dir:',
+      '                df, _ = build_lake_file(cfg["name"], cfg, catalog, start, stop, Path(temp_dir))',
+      '                if list(df.columns) != COLUMNS: raise ValueError("Unexpected satellite CSV schema")',
+      '                if df.empty: raise ValueError("No daily forcing data found")',
+      '                frames.append(df.copy())',
+      '            print("Completed window", index, "daily rows:", len(df), "valid satellite LST:", int(df["observed_lst_c"].notna().sum()))',
+      '            break',
+      '        except Exception as error:',
+      '            print("Attempt", attempt, "failed for", start, "to", stop, ":", error)',
+      '            if attempt == 3: failures.append(str(start)+" to "+str(stop)+": "+str(error))',
+      'if failures:',
+      '    raise RuntimeError("Some windows failed; no falsely complete CSV was exported. "+ "; ".join(failures))',
+      'if not frames: raise RuntimeError("No satellite windows produced data")',
+      'combined=pd.concat(frames, ignore_index=True)',
+      'combined["date"]=combined["date"].astype(str)',
+      'combined=combined.sort_values("date").reset_index(drop=True)',
+      'if combined["date"].duplicated().any():',
+      '    raise RuntimeError("Overlapping daily rows detected; no duplicates were silently discarded")',
+      'combined=combined[COLUMNS]',
+      'path=OUTPUT_DIR / CONFIG["output_name"]',
+      'combined.to_csv(path, index=False, na_rep="")',
+      'print("All", len(windows), "download windows completed.")',
+      'print("In-situ dates defining windows:", CONFIG["n_insitu"])',
+      'print("Combined daily rows:", len(combined))',
+      'print("Valid satellite LST observations:", int(combined["observed_lst_c"].notna().sum()))',
+      'print("Absent satellite temperatures stay missing; no interpolation.")',
+      'print("Downloading ONE combined file:", path.name)',
+      'files.download(str(path))'
+    ].join('\n');
+    const notes=[
+      '# ReST-Lake Satellite LST for In-Situ Bias Calibration',
+      '',
+      'Lake: '+config.lake.name,
+      'Available in-situ dates: '+config.n_insitu,
+      'Distinct ±1-month satellite download windows: '+config.windows.length,
+      '',
+      ...config.windows.map((w,i)=>(i+1)+'. '+w.start_date+' to '+w.end_date+' ('+w.observation_count+' in-situ dates)'),
+      '',
+      'Choose Runtime → Run all ONCE. This notebook uses the unchanged ERA5/Landsat pipeline over EVERY window and automatically downloads one combined CSV: '+config.output_name+'.',
+      'The five original satellite CSV columns are preserved. Missing satellite observations are not interpolated; the number of valid Landsat dates may be less than the in-situ date count.'
+    ].join('\n');
+    return {nbformat:4,nbformat_minor:5,metadata:{colab:{name:'Satellite_all_insitu_windows.ipynb',provenance:[]},
+      kernelspec:{display_name:'Python 3',name:'python3'},language_info:{name:'python'}},cells:[
+      {cell_type:'markdown',metadata:{},source:notes},
       codeCell('%pip -q install pystac-client planetary-computer rasterio shapely pyproj requests pandas numpy tqdm\n'),
-      codeCell(setup), codeCell(pipeline), codeCell(run)
+      codeCell(setup),codeCell(pipeline),codeCell(run)
     ]};
   }
   let pipelineText = null;
@@ -209,7 +221,7 @@ files.download(str(result_path))
   notebookDownload.className = oldDownloadButton.className;
   notebookDownload.textContent = oldDownloadButton.textContent;
   notebookDownload.href = '#';
-  notebookDownload.download = 'Lake_data_download.ipynb';
+  notebookDownload.download = 'Satellite_all_insitu_windows.ipynb';
   oldDownloadButton.replaceWith(notebookDownload);
   let notebookUrl = null;
   notebookDownload.addEventListener('click', event => {
@@ -230,7 +242,7 @@ files.download(str(result_path))
       }
       notebookUrl = nextUrl;
       notebookDownload.href = nextUrl;
-      show(`Notebook ready for ${config.lakes.length} lake(s). Open Colab, upload this notebook and choose Runtime → Run all.`, 'success');
+      show('One notebook ready: '+config.windows.length+' satellite windows for '+config.n_insitu+' in-situ dates; run it once in Colab for one combined CSV.', 'success');
       // Do not preventDefault: the anchor downloads through its native click.
     } catch (error) {
       event.preventDefault();
