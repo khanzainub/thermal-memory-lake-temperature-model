@@ -104,7 +104,7 @@ function selectLake(){
  $("selectedLakeLabel").textContent="Lake: "+lake;
  $("remainingWorkspace").hidden=false;
  $("chooseLakeHint").hidden=true;
- for(const id of ["insituUpload","insituDate","insituTemp","upsert","saveObs","downloadInsitu","cancelEdit"])$(id).disabled=false;
+ for(const id of ["insituUpload","satUpload","insituDate","insituTemp","upsert","saveObs","downloadInsitu","cancelEdit"])$(id).disabled=false;
  editing=null;syncDownloadLake();renderObs();renderSatellite();syncDateRange();invalidate();
  if(data().calibration && Number.isFinite(data().calibration.bias_c) && data().results?.computed){
    run=data().results.computed;pairs=data().results.pairs||[];
