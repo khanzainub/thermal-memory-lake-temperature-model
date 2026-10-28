@@ -16,34 +16,43 @@ function savedBiases(){
     .map(([lake,d])=>({lake,bias:d.calibration.bias_c}));
  }catch(e){return []}
 }
-function chooseBias(filename,frameIndex) {
+const checkboxes=[$("applyMemoryBias"),$("applyBaselineBias")];
+const valueInputs=[$("memoryBiasValue"),$("baselineBiasValue")];
+const resetButtons=[$("memoryBiasAuto"),$("baselineBiasAuto")];
+const manualOverrides=[false,false];
+function chooseBias(filename,frameIndex){
  if(!checkboxes[frameIndex].checked||alreadyCorrected(filename))return null;
- const available=savedBiases();
- if(!available.length)throw Error("No saved in-situ bias yet. Calculate and save it in In-Situ Calibration.");
- const selected=localStorage.getItem(ACTIVE);
+ const typed=valueInputs[frameIndex].value.trim();
+ if(typed===""||!Number.isFinite(Number(typed)))throw Error("Enter a finite additive bias in °C, or click Use calculated bias.");
+ const available=savedBiases(),selected=localStorage.getItem(ACTIVE);
  const record=available.find(x=>x.lake===selected);
  const stem=normalize(String(filename).replace(/\.csv$/i,""));
- const named=available.filter(c=>stem===normalize(c.lake)||stem.startsWith(normalize(c.lake)+"_"))
-  .sort((a,b)=>normalize(b.lake).length-normalize(a.lake).length);
- const chosen=named[0]||record;
- if(!chosen)throw Error("Select the correct lake in In-Situ Calibration before applying its saved bias.");
- if(named.length && record && named[0].lake!==record.lake)
-   throw Error("The uploaded CSV names "+named[0].lake+" but the active calibration belongs to "+record.lake+". Select the right lake.");
- if(!named.length&&!confirm("Apply saved "+chosen.lake+" bias ("+chosen.bias.toFixed(3)+" °C) to original file '"+filename+"'?"))
-   throw Error("Bias correction was cancelled; uncheck the box to upload without correction.");
- return chosen;
+ const named=available.filter(x=>stem===normalize(x.lake)||stem.startsWith(normalize(x.lake)+"_"))
+  .sort((a,b)=>normalize(b.lake).length-normalize(a.lake).length)[0];
+ if(named&&record&&named.lake!==record.lake)
+   throw Error("The CSV names "+named.lake+" but the selected in-situ lake is "+record.lake+". Select the matching lake or upload the intended CSV.");
+ const lake=named?.lake||record?.lake||"Manual input";
+ if(!named&&record&&!confirm("Apply "+(manualOverrides[frameIndex]?"manually entered":"calculated")+" "+lake+" bias ("+Number(typed).toFixed(3)+" °C) to original file '"+filename+"'?"))
+   throw Error("Bias correction cancelled. Uncheck the box to upload unchanged.");
+ return {lake,bias:Number(typed),source:manualOverrides[frameIndex]?"manual":"calculated"};
 }
 function refreshBiasInfo(){
  const saved=savedBiases(),active=localStorage.getItem(ACTIVE),value=saved.find(x=>x.lake===active);
  for(let i=0;i<2;i++){
   const info=$([ "memoryBiasInfo","baselineBiasInfo"][i]);
-  info.textContent=value?
-   "Saved "+value.lake+" bias: "+value.bias.toFixed(3)+" °C. Checked = apply to the NEXT original satellite CSV upload; unchecked = leave unchanged.":
-   "No active saved lake bias. Save a calibration value in the In-Situ Calibration tab first; unchecked leaves satellite data unchanged.";
+  if(!manualOverrides[i])valueInputs[i].value=value?String(value.bias.toFixed(3)):"";
+  resetButtons[i].disabled=!value;
+  info.textContent=manualOverrides[i]?
+    "Manual override: "+(valueInputs[i].value.trim()||"empty")+" °C. Applies to the next ORIGINAL model-input CSV only. Use calculated bias to restore the saved value.":
+    value?"Auto-filled from "+value.lake+" in-situ calibration. Editable: type any signed °C value to override. Correction applies at the next data load.":
+    "No saved in-situ calibration for the selected lake. Enter an additive bias manually, or calculate and save one in In-Situ Calibration.";
  }
 }
-const checkboxes=[$("applyMemoryBias"),$("applyBaselineBias")];
+valueInputs.forEach((input,i)=>input.addEventListener("input",()=>{manualOverrides[i]=true;refreshBiasInfo()}));
+resetButtons.forEach((button,i)=>button.addEventListener("click",()=>{manualOverrides[i]=false;refreshBiasInfo()}));
 checkboxes.forEach(c=>c.addEventListener("change",refreshBiasInfo));
+window.addEventListener("storage",e=>{if(e.key===STORE||e.key===ACTIVE)refreshBiasInfo()});
+window.addEventListener("focus",refreshBiasInfo);
 function corrected(text,name,choice){
  if(!choice)return {csv:text,name,applied:null};
  const originals=ReSTInSituCore.satelliteCSV(text);
@@ -69,7 +78,7 @@ async function handleFile(frame,file,choice,application=false){
   const result=api.getState();
   if((application&&!result.applicationRows)||(!application&&!result.rows))
     throw Error("Original model rejected the corrected CSV; see its input requirements.");
-  note(frame,"Saved "+choice.lake+" in-situ bias "+choice.bias.toFixed(3)+" °C was applied to satellite LST. Original observations remain unchanged; the model will use corrected values.",application);
+  note(frame,"Selected "+choice.lake+" "+choice.source+" bias "+choice.bias.toFixed(3)+" °C was applied to satellite LST. Original observations remain unchanged; the model will use corrected values.",application);
   resize(frame);
  }catch(e){note(frame,"Bias correction failed: "+(e.message||e),application,"danger");}
 }
@@ -127,7 +136,7 @@ async function loadBoth(csv,name,frequency="Daily"){
   radio.checked=true;radio.dispatchEvent(new win.Event("change",{bubbles:true}));
   await win.__thermalMemoryApp.loadTextDataset(input.csv,input.name);
   if(!win.__thermalMemoryApp.getState().rows)throw Error("Original model rejected "+input.name);
-  if(chosen)note(frame, "Saved "+chosen.lake+" bias ("+chosen.bias.toFixed(3)+" °C) applied to existing satellite LST observations.");
+  if(chosen)note(frame, "Selected "+chosen.lake+" "+chosen.source+" bias ("+chosen.bias.toFixed(3)+" °C) applied to satellite LST observations.");
   resize(frame);
  }
  refreshBiasInfo();
