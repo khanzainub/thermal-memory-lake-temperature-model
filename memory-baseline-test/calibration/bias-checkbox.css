@@ -1,0 +1,12 @@
+.bias-option{margin:12px 10px;padding:12px 14px;border:1px solid #c9dee6;border-radius:10px;background:#f6fafc;display:flex;flex-direction:column;gap:6px}
+.bias-option label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:750;color:#154d65;cursor:pointer}
+.bias-option input{width:17px;height:17px;accent-color:#0d6d8e}.bias-detail{font-size:12px;color:#526f7d;margin-left:25px}
+.bias-option .bias-entry{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:3px 0 3px 25px}
+.bias-option .bias-entry label{font-size:12px;min-width:110px;cursor:default}
+.bias-option input[type="number"]{width:150px;height:37px;max-width:100%;padding:7px 10px;border-radius:8px;border:1px solid #93bcc9;background:#fff;color:#153f56;font-size:15px;font-weight:650;accent-color:auto}
+.bias-option .bias-auto{border:1px solid #4d9cae;border-radius:8px;padding:8px 11px;background:#dff4f5;color:#125169;font-weight:700;font-size:12px;cursor:pointer}
+.bias-option .bias-auto:disabled{opacity:.5;cursor:not-allowed}
+.animated-theme .bias-option .bias-entry label{color:#d4eaf7}
+.animated-theme .bias-option input[type="number"]{background:#092943;color:#e7fbff;border-color:#338ea0}
+.animated-theme .bias-option .bias-auto{background:#165474;color:#e2fcff;border-color:#479cbb}
+@media(max-width:520px){.bias-option .bias-entry{margin-left:0}.bias-option .bias-detail{margin-left:0}.bias-option input[type="number"]{width:min(180px,100%)}}
