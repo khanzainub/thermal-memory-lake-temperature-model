@@ -1,7 +1,0 @@
-/* Isolated extension: existing model CSS and model panes are unmodified. */
-.cmp-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
-#inSituPane[hidden]{display:none!important}
-#inSituPane iframe{display:block;width:100%;min-height:760px;border:0;background:#fff}
-@media(max-width:680px){.cmp-tabs{gap:5px}.cmp-tabs button{font-size:11px;line-height:1.25;padding:12px 4px}}
-
-#sharedModelDownload[hidden],#sharedModelInput[hidden]{display:none!important}
