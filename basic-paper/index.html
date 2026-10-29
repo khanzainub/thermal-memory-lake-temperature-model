@@ -1,50 +1,45 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ReST-Lake | With Memory versus Baseline</title><link rel="stylesheet" href="style.css?v=restlake-20261023b"><link rel="stylesheet" href="comparison.css"></head><body><div class="page-shell"><header class="hero">
-      <div class="hero__inner">
-        <div class="hero__copy">
-          <div class="eyebrow"><span class="hero__live-dot"></span> REMOTE SENSING · LAKE THERMODYNAMICS · RECONSTRUCTION</div>
-          <div class="hero__brand">ReST<span>–</span>Lake <span class="hero__edition">RESEARCH PROTOTYPE</span></div>
-          <h1>Remote Sensing–Integrated<br><em>Thermal Response</em> Model for Lakes</h1>
-          <p class="hero__lead">Explore the thermal response of lakes using satellite-derived surface temperature and atmospheric forcing. Calibrate lake-specific dynamics, independently validate predictions, and reconstruct missing observations.</p>
-          <div class="hero__badges">
-            <span>Satellite LSWT observations</span><span>Atmospheric forcing</span><span>Chronological validation</span><span>Browser-based</span>
-          </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ReST-Lake Basic Paper: With-Memory and Zero-Memory Baseline model runs.">
+  <title>ReST-Lake | Basic Paper</title>
+  <link rel="stylesheet" href="style.css?v=restlake-20261023b">
+  <link rel="stylesheet" href="comparison.css?v=basic-paper-v1">
+  <style>
+    .basic-header{max-width:1100px;margin:0 auto;padding:30px 20px 10px;}
+    .basic-header h1{font-size:clamp(1.5rem,3vw,2rem);margin:0 0 6px;color:#15364c;}
+    .basic-header p{color:#557483;margin:0;line-height:1.6;}
+    #compareModels{padding-top:20px;}
+    .comparison .panel__heading{margin-bottom:10px;}
+    .comparison iframe{min-height:700px;}
+    @media(max-width:600px){.basic-header{padding:20px 14px 8px;}#compareModels{padding:12px;}}
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="basic-header">
+      <h1>ReST-Lake — Basic Paper</h1>
+      <p>Upload a model-input CSV and run either of the two models.</p>
+    </header>
+    <main class="container">
+      <section id="compareModels" class="panel comparison">
+        <div class="cmp-tabs" role="tablist" aria-label="Model selection">
+          <button id="tabMemory" type="button" role="tab" aria-selected="true" aria-controls="memoryPane" class="cmp-active">With Memory</button>
+          <button id="tabBaseline" type="button" role="tab" aria-selected="false" aria-controls="baselinePane">Baseline (M = 0)</button>
         </div>
-        <div class="hero__visual" aria-label="Illustrative scientific diagram showing satellite observation, lake thermal response and temperature time series; not measured data">
-          
-          <svg viewBox="0 0 540 340" role="img" aria-label="Illustrative satellite remote sensing and two temperature response curves, not actual lake measurements">
-            <defs>
-              <linearGradient id="lakeFill" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#36c9da"/><stop offset="1" stop-color="#1855aa"/></linearGradient>
-              <linearGradient id="curveA" x1="0" x2="1"><stop stop-color="#5de2e0"/><stop offset="1" stop-color="#83baff"/></linearGradient>
-              <linearGradient id="curveB" x1="0" x2="1"><stop stop-color="#ffbd75"/><stop offset="1" stop-color="#ff7b83"/></linearGradient>
-            </defs>
-            <g opacity=".25" stroke="#a5d9ef" stroke-width="1"><path d="M42 66H500 M42 116H500 M42 166H500 M42 216H500 M42 266H500"/><path d="M42 48V276 M118 48V276 M194 48V276 M270 48V276 M346 48V276 M422 48V276 M500 48V276"/></g>
-            <g transform="translate(395 26) rotate(-16)"><rect x="0" y="0" width="57" height="31" rx="7" fill="#b6def1" stroke="#fff" stroke-opacity=".75"/><rect x="17" y="7" width="23" height="17" rx="3" fill="#1b5171"/><path d="M-38 4H-5V26H-38z M62 4H95V26H62z" fill="#3b83b2" stroke="#9cdeef"/><path d="M28 31V54" stroke="#9cdeef" stroke-dasharray="4 5"/></g>
-            <path d="M42 226C97 205 143 233 190 219S278 207 329 222S418 230 500 209L500 276H42Z" fill="url(#lakeFill)" opacity=".19"/>
-            <path d="M42 209 C77 186 97 109 133 131 S189 237 225 209 S286 105 327 127 S385 239 425 199 S468 125 500 143" fill="none" stroke="url(#curveB)" stroke-width="3.5" stroke-linecap="round"/>
-            <path d="M42 225 C86 214 108 171 146 166 S204 200 240 203 S302 160 337 166 S395 207 433 202 S472 171 500 167" fill="none" stroke="url(#curveA)" stroke-width="4" stroke-linecap="round"/>
-            <g fill="#071e37" stroke="#91f1f3" stroke-width="2.3"><circle cx="146" cy="166" r="5"/><circle cx="240" cy="203" r="5"/><circle cx="337" cy="166" r="5"/><circle cx="433" cy="202" r="5"/></g>
-            
-            <text x="43" y="302" fill="#90b4cc" font-size="11">TIME →</text>
-          </svg>
-          <div class="hero__visual-foot"><span><i class="hero__legend hero__legend--air"></i> Atmospheric temperature</span><span><i class="hero__legend hero__legend--lake"></i> Lake surface response</span></div>
-          
-        </div>
-      </div>
-    </header><main class="container">
-<section id="compareModels" class="panel comparison">
-  <div class="panel__heading"><div><span class="step">MODEL</span><h2>ReST-Lake — Basic Paper</h2></div></div>
-  <p class="helper">Select a model, upload your existing model-input CSV, and run calibration and validation. No data downloader or in-situ bias correction is included.</p>
-  <div class="cmp-tabs" role="tablist" aria-label="Model choice">
-    <button id="tabMemory" role="tab" type="button" aria-selected="true" aria-controls="memoryPane" class="cmp-active">With Memory</button>
-    <button id="tabBaseline" role="tab" type="button" aria-selected="false" aria-controls="baselinePane">Baseline · M = 0</button>
+        <p class="helper" id="modeNote">With Memory: upload your CSV below to calibrate, validate and run the thermal-response model.</p>
+        <section id="memoryPane" role="tabpanel" aria-labelledby="tabMemory">
+          <iframe id="frameMemory" title="With-Memory model" src="with-memory/index.html" loading="eager"></iframe>
+        </section>
+        <section id="baselinePane" role="tabpanel" aria-labelledby="tabBaseline" hidden>
+          <iframe id="frameBaseline" title="Zero-Memory Baseline model" src="baseline/index.html" loading="eager"></iframe>
+        </section>
+      </section>
+    </main>
+    <footer class="cmp-footer">ReST-Lake · © 2026 Zainab Khan</footer>
   </div>
-  <p class="helper" id="modeNote">With-Memory ReST-Lake: upload your data below to fit and validate the model.</p>
-  <section id="memoryPane" role="tabpanel" aria-labelledby="tabMemory">
-    <iframe id="frameMemory" title="With Memory Model" src="with-memory/index.html" loading="eager"></iframe>
-  </section>
-  <section id="baselinePane" role="tabpanel" aria-labelledby="tabBaseline" hidden>
-    <iframe id="frameBaseline" title="Baseline Model" src="baseline/index.html" loading="eager"></iframe>
-  </section>
-</section>
-</main><footer class="cmp-footer">ReST-Lake scientific model comparison · Original repository files preserved</footer></div>
-<script src="comparison.js?v=basic-paper-v1"></script></body></html>
+  <script src="comparison.js?v=basic-paper-v1"></script>
+</body>
+</html>
